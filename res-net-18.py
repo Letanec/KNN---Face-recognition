@@ -69,10 +69,16 @@ class ResidualBlock(nn.Module):
             nn.Conv2d(channels_out, channels_out, kernel_size=3, stride=1, padding=1, bias=False),
             nn.BatchNorm2d(channels_out)
         )
-        self.identity = nn.Sequential(
-            nn.Conv2d(channels_in, channels_out, kernel_size=1, stride=stride, bias=False),
-            nn.BatchNorm2d(channels_out)
-        )
+        #results od self.operation and self.identity has to have same C,W,H to perform addition
+        if channels_in == channels_out and stride == 1:
+            #no operation needed
+            self.identity = nn.Sequential()
+        else:
+            #correct C,W,H by 1x1 conv
+            self.identity = nn.Sequential(
+                nn.Conv2d(channels_in, channels_out, kernel_size=1, stride=stride, bias=False),
+                nn.BatchNorm2d(channels_out)
+            )        
     def forward(self, x):
         output = self.operation(x) + self.identity(x)
         output = f.relu(output)
@@ -196,5 +202,5 @@ for e in range(epoch_num):
 
         avg_loss = loss_sum / (b+1)
         acc = 100. * correct / total
-        print("epoch:", e, "batch:", b, "avg loss:", avg_loss, "train acc:", acc)
+        print("epoch:", e, "batch:", b, "avg loss:", "%.3f" % avg_loss, "train acc:", acc.item())
 
