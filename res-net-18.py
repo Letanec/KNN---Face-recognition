@@ -69,9 +69,9 @@ class ResidualBlock(nn.Module):
             nn.Conv2d(channels_out, channels_out, kernel_size=3, stride=1, padding=1, bias=False),
             nn.BatchNorm2d(channels_out)
         )
-        #results od self.operation and self.identity has to have same C,W,H to perform addition
+        #results of self.operation and self.identity have to have same C,W,H to perform addition
         if channels_in == channels_out and stride == 1:
-            #no operation needed
+            #no change needed
             self.identity = nn.Sequential()
         else:
             #correct C,W,H by 1x1 conv
