@@ -1,12 +1,17 @@
 import torch
 import torch.nn.functional as f
 from torch import nn, optim, Tensor
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, Dataset
 from torchvision import datasets
 from torchvision.transforms import ToTensor, Lambda, Compose, Resize
 import matplotlib.pyplot as plt
 import numpy as np 
 from sklearn.manifold import TSNE
+import pandas as pd
+from PIL import Image
+from google.colab import drive
+# drive.mount('/content/drive/')
+# !unzip /content/drive/MyDrive/KNN/lfw-deepfunneled.zip
 
 transform=Compose([
     Resize(224), #28x28 -> 224x224
@@ -30,11 +35,36 @@ test_data = datasets.MNIST(
     transform=transform
 )
 
+class LFWDataset(Dataset):
+  def __init__(self, csv_file, root_dir, transform=None):
+    self.annotations = pd.read_csv(csv_file)
+    self.root_dir = root_dir
+    self.transform = transform
+  
+  def __len__(self):
+    return len(self.annotations)
+  
+  def __getitem__(self, index):
+    img_path = os.path.join(self.root_dir, self.annotations.iloc[index, 0])
+    image = Image.open(img_path)
+    y_label = torch.tensor(int(self.annotations.iloc[index,1]))
+
+    if self.transform:
+      image = self.transform(image)
+    
+    return (image, y_label)
+
+dataset = LFWDataset(csv_file = 'lfw-deepfunneled/lfw.csv', root_dir = 'lfw-deepfunneled', transform = transform)
+train_set = dataset
+
 batch_size = 64
 epoch_num = 1000
 lr = 0.1
 visualization_cnt = 5
 visualization_colors = ["green", "blue", "red", "black", "yellow"]
+
+train_set_dataloader = DataLoader(train_set, batch_size=batch_size, shuffle=True)
+#test_set_dataloader = DataLoader(test_set, batch_size=batch_size, shuffle=True)
 
 # Create data loaders
 train_dataloader = DataLoader(training_data, batch_size=batch_size, shuffle=True)
