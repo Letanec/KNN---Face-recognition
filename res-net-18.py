@@ -5,6 +5,8 @@ from torch.utils.data import DataLoader
 from torchvision import datasets
 from torchvision.transforms import ToTensor, Lambda, Compose, Resize
 import matplotlib.pyplot as plt
+import numpy as np 
+from sklearn.manifold import TSNE
 
 transform=Compose([
     Resize(224), #28x28 -> 224x224
@@ -12,7 +14,7 @@ transform=Compose([
     Lambda(lambda x: x.repeat(3, 1, 1))  #3x copy grayscale channel -> "RGB"  
 ]) 
 
-# Download training data from open datasets.
+# Download training data from open datasets
 training_data = datasets.MNIST(
     root="data",
     train=True,
@@ -20,7 +22,7 @@ training_data = datasets.MNIST(
     transform=transform
 )
 
-# Download test data from open datasets.
+# Download test data from open datasets
 test_data = datasets.MNIST(
     root="data",
     train=False,
@@ -31,15 +33,24 @@ test_data = datasets.MNIST(
 batch_size = 64
 epoch_num = 1000
 lr = 0.1
+visualization_cnt = 5
+visualization_colors = ["green", "blue", "red", "black", "yellow"]
 
-# Create data loaders.
-train_dataloader = DataLoader(training_data, batch_size=batch_size)
-test_dataloader = DataLoader(test_data, batch_size=batch_size)
+# Create data loaders
+train_dataloader = DataLoader(training_data, batch_size=batch_size, shuffle=True)
+test_dataloader = DataLoader(test_data, batch_size=100)
 
+# Vizualization data
+X, Y = next(iter(test_dataloader))
+mask = np.vectorize(lambda x: x < visualization_cnt)(Y)
+visualization_data = X[mask],Y[mask]
+
+'''
 for X, y in train_dataloader:
     print("Shape of X [N, C, H, W]: ", X.shape)
     print("Shape of y: ", y.shape, y.dtype)
     break
+'''
 
 # Get cpu or gpu device for training.
 device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -168,18 +179,49 @@ class ResNet18(nn.Module):
             nn.AvgPool2d(7),  #512x7x7 -> 512x1x1
             nn.Flatten(),
             nn.Linear(512, 1000),
-            nn.ReLU(),
+            nn.ReLU()
+        )
+        self.softmax =  nn.Sequential(
             nn.Linear(1000, num_classes),
             nn.Softmax(dim=1)
         )
-    def forward(self, x):
+
+    def encode(self, x):
         return self.operation(x)
 
-model = ResNet18(10).to(device)
-#print(model)
+    def forward(self,x):
+        x = self.operation(x)
+        x = self.softmax(x)
+        return x
 
+def validate(model):
+    model.train(mode=False)
+    correct = total = 0 
+    for inputs, labels in test_dataloader:
+        inputs, labels = inputs.to(device), labels.to(device)
+        outputs = model(inputs)
+        predicted = torch.argmax(outputs.data, dim=1)
+        correct += predicted.eq(labels.data).cpu().sum()
+        total += labels.size(0)
+    return (100. * correct / total).item()
+
+def visualize_embeding(model):  
+    inputs,labels = visualization_data
+    model.train(mode=False)
+    outputs = model.encode(inputs)
+    outputs_embedded = TSNE(n_components=2).fit_transform(outputs.detach().numpy())
+    x,y = np.hsplit(outputs_embedded, 2)
+    x,y = x.flatten(), y.flatten()
+    for i in range(len(x)):
+        plt.scatter(x[i], y[i], color=visualization_colors[labels[i]])
+    plt.show()
+
+model = ResNet18(10).to(device)
 criterion = nn.CrossEntropyLoss ()
 optimizer = optim.SGD(model.parameters(), lr=lr) 
+
+visualize_embeding(model)
+exit()
 
 #training
 #foreach epoch
@@ -199,8 +241,8 @@ for e in range(epoch_num):
         predicted = torch.argmax(outputs.data, dim=1)
         total += labels.size(0)
         correct += predicted.eq(labels.data).cpu().sum()
-
         avg_loss = loss_sum / (b+1)
-        acc = 100. * correct / total
-        print("epoch:", e, "batch:", b, "avg loss:", "%.3f" % avg_loss, "train acc:", acc.item())
+        train_acc = (100. * correct / total).item()
+        test_acc = validate(model)
+        print("epoch:", e, "batch:", b, "avg loss:", "%.3f" % avg_loss, "train acc:", train_acc, "test acc: ", test_acc)
 
