@@ -14,12 +14,20 @@ from google.colab import drive
 # drive.mount('/content/drive/')
 # !unzip /content/drive/MyDrive/KNN/lfw-deepfunneled.zip
 
+batch_size = 64
+epoch_num = 1000
+lr = 0.1
+target_test_acc = 80
+visualization_cnt = 5
+visualization_colors = ["green", "blue", "red", "black", "yellow"]
+
 transform=Compose([
     Resize(224), #28x28 -> 224x224
     ToTensor(),
     Lambda(lambda x: x.repeat(3, 1, 1))  #3x copy grayscale channel -> "RGB"  
 ]) 
 
+'''
 # Download training data from open datasets
 training_data = datasets.MNIST(
     root="data",
@@ -27,14 +35,13 @@ training_data = datasets.MNIST(
     download=True,
     transform=transform
 )
-
-# Download test data from open datasets
 test_data = datasets.MNIST(
     root="data",
     train=False,
     download=True,
     transform=transform
 )
+'''
 
 class LFWDataset(Dataset):
   def __init__(self, csv_file, root_dir, transform=None):
@@ -58,30 +65,19 @@ class LFWDataset(Dataset):
 dataset = LFWDataset(csv_file = 'lfw-deepfunneled/lfw.csv', root_dir = 'lfw-deepfunneled', transform = transform)
 train_set = dataset
 
-batch_size = 64
-epoch_num = 1000
-lr = 0.1
-visualization_cnt = 5
-visualization_colors = ["green", "blue", "red", "black", "yellow"]
-
 train_set_dataloader = DataLoader(train_set, batch_size=batch_size, shuffle=True)
 #test_set_dataloader = DataLoader(test_set, batch_size=batch_size, shuffle=True)
 
+'''
 # Create data loaders
 train_dataloader = DataLoader(training_data, batch_size=batch_size, shuffle=True)
 test_dataloader = DataLoader(test_data, batch_size=100)
+'''
 
 # Vizualization data
 X, Y = next(iter(test_dataloader))
 mask = np.vectorize(lambda x: x < visualization_cnt)(Y)
 visualization_data = X[mask],Y[mask]
-
-'''
-for X, y in train_dataloader:
-    print("Shape of X [N, C, H, W]: ", X.shape)
-    print("Shape of y: ", y.shape, y.dtype)
-    break
-'''
 
 # Get cpu or gpu device for training.
 device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -126,6 +122,7 @@ class ResidualBlock(nn.Module):
         output = f.relu(output)
         return output
 
+'''
 #Conv block, resnet50
 class ConvBlock(nn.Module):
     def __init__(self, batch_size: int, channels_in: int, channels_out: int):
@@ -186,6 +183,7 @@ class IdentityBlock(nn.Module):
         output = self.relu(output)
 
         return (output)
+'''
 
 #ResNet18
 class ResNet18(nn.Module):
@@ -251,9 +249,6 @@ model = ResNet18(10).to(device)
 criterion = nn.CrossEntropyLoss ()
 optimizer = optim.SGD(model.parameters(), lr=lr) 
 
-visualize_embeding(model)
-exit()
-
 #training
 #foreach epoch
 for e in range(epoch_num):
@@ -276,4 +271,9 @@ for e in range(epoch_num):
         train_acc = (100. * correct / total).item()
         test_acc = validate(model)
         print("epoch:", e, "batch:", b, "avg loss:", "%.3f" % avg_loss, "train acc:", train_acc, "test acc: ", test_acc)
+
+        if test_acc > target_test_acc:
+            break
+
+visualize_embeding(model)
 
