@@ -16,6 +16,7 @@ from google.colab import drive
 
 batch_size = 64
 epoch_num = 1000
+num_classes = 423
 lr = 0.1
 target_test_acc = 80
 visualization_cnt = 5
@@ -245,7 +246,7 @@ def visualize_embeding(model):
         plt.scatter(x[i], y[i], color=visualization_colors[labels[i]])
     plt.show()
 
-model = ResNet18(10).to(device)
+model = ResNet18(num_classes).to(device)
 criterion = nn.CrossEntropyLoss ()
 optimizer = optim.SGD(model.parameters(), lr=lr) 
 
