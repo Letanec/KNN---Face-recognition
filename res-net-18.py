@@ -16,7 +16,7 @@ from google.colab import drive
 
 batch_size = 64
 epoch_num = 1000
-num_classes = 423
+num_classes = 1700
 lr = 0.1
 target_test_acc = 80
 visualization_cnt = 5
@@ -64,10 +64,12 @@ class LFWDataset(Dataset):
     return (image, y_label)
 
 dataset = LFWDataset(csv_file = 'lfw-deepfunneled/lfw.csv', root_dir = 'lfw-deepfunneled', transform = transform)
-train_set = dataset
 
-train_set_dataloader = DataLoader(train_set, batch_size=batch_size, shuffle=True)
-#test_set_dataloader = DataLoader(test_set, batch_size=batch_size, shuffle=True)
+train_size = int(len(dataset)*0.8)
+train_set, test_set = torch.utils.data.random_split(dataset, [train_size, len(dataset) - train_size])
+
+train_dataloader = DataLoader(train_set, batch_size=batch_size, shuffle=True)
+test_dataloader = DataLoader(test_set, batch_size=batch_size, shuffle=True)
 
 '''
 # Create data loaders
