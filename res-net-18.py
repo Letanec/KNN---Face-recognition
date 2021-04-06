@@ -24,8 +24,8 @@ visualization_colors = ["green", "blue", "red", "black", "yellow"]
 
 transform=Compose([
     Resize(224), #28x28 -> 224x224
-    ToTensor(),
-    Lambda(lambda x: x.repeat(3, 1, 1))  #3x copy grayscale channel -> "RGB"  
+    ToTensor()#,
+    #Lambda(lambda x: x.repeat(3, 1, 1))  #3x copy grayscale channel -> "RGB"  
 ]) 
 
 '''
@@ -59,6 +59,7 @@ class LFWDataset(Dataset):
     y_label = torch.tensor(int(self.annotations.iloc[index,1]))
 
     if self.transform:
+      image = image.convert("RGB") 
       image = self.transform(image)
     
     return (image, y_label)
