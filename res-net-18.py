@@ -22,32 +22,60 @@ target_test_acc = 80
 visualization_cnt = 10
 visualization_colors = ["b", "g", "r", "c", "m", "y", "k", "w", "orange", "gray"]
 
+<<<<<<< Updated upstream
+transform=Compose([
+    Resize(224), #28x28 -> 224x224
+    ToTensor()#,
+    #Lambda(lambda x: x.repeat(3, 1, 1))  #3x copy grayscale channel -> "RGB"  
+]) 
+
+'''
+# Download training data from open datasets
+training_data = datasets.MNIST(
+    root="data",
+    train=True,
+    download=True,
+    transform=transform
+)
+test_data = datasets.MNIST(
+    root="data",
+    train=False,
+    download=True,
+    transform=transform
+)
+'''
+=======
 #drive.mount('/content/drive/')
 #ODKOMENTOVAT JEDNO PRI PRVOM SPUSTENI
 #CASIA dataset ako zip, musi byt uploadnuty vo vasom google drive v zlozke KNN
 #!unzip /content/drive/MyDrive/KNN/CASIA.zip
 #LFW dataset ako zip, musi byt uploadnuty vo vasom google drive v zlozke KNN
 #!unzip /content/drive/MyDrive/KNN/lfw-deepfunneled.zip
+>>>>>>> Stashed changes
 
 class LFWDataset(Dataset):
-    def __init__(self, csv_file, root_dir, transform=None):
-        self.annotations = pd.read_csv(csv_file)
-        self.root_dir = root_dir
-        self.transform = transform
+  def __init__(self, csv_file, root_dir, transform=None):
+    self.annotations = pd.read_csv(csv_file)
+    self.root_dir = root_dir
+    self.transform = transform
   
-    def __len__(self):
-        return len(self.annotations)
+  def __len__(self):
+    return len(self.annotations)
   
-    def __getitem__(self, index):
-        img_path = os.path.join(self.root_dir, self.annotations.iloc[index, 0])
-        image = Image.open(img_path)
-        y_label = torch.tensor(int(self.annotations.iloc[index,1]))
+  def __getitem__(self, index):
+    img_path = os.path.join(self.root_dir, self.annotations.iloc[index, 0])
+    image = Image.open(img_path)
+    y_label = torch.tensor(int(self.annotations.iloc[index,1]))
 
-        if self.transform:
-            image = image.convert("RGB") 
-            image = self.transform(image)
+    if self.transform:
+<<<<<<< Updated upstream
+      image = image.convert("RGB") 
+=======
+      image = image.convert("RGB")
+>>>>>>> Stashed changes
+      image = self.transform(image)
     
-        return (image, y_label)
+    return (image, y_label)
 
 transform=Compose([Resize(224), ToTensor()]) 
 
@@ -180,6 +208,7 @@ def visualize_embeding(model):
         for i in range(len(x)):
             plt.scatter(x[i], y[i], color=visualization_colors[labels[i]])
         plt.show()
+
 
 
 model = ResNet18(num_classes).to(device)
