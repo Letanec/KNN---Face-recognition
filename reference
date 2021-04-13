@@ -4,3 +4,6 @@ https://www.researchgate.net/figure/Network-structure-illustration-a-ResNet-18-o
 
 KNN 04 -> 10 -> ResNet variant (a) original
 
+https://medium.com/@mustafaazzurri/face-recognition-system-and-calculating-frr-far-and-eer-for-biometric-system-evaluation-code-2ac2bd4fd2e5
+
+Please check src/data/face2rec2.py on how to build a binary face dataset. You can either choose MTCNN or RetinaFace to align the faces.
