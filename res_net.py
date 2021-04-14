@@ -1,3 +1,4 @@
+import torch
 from torch import nn
 class Block(nn.Module):
     def __init__(self, num_layers, in_channels, out_channels, identity_downsample=None, stride=1):
@@ -12,7 +13,7 @@ class Block(nn.Module):
         self.conv1 = nn.Conv2d(in_channels, out_channels, kernel_size=1, stride=1, padding=0)
         self.bn1 = nn.BatchNorm2d(out_channels)
         if self.num_layers > 34:
-            self.conv2 = nn.Conv2d(out_channels, out_channels, kernel_size=3, stride=stride, padding=1)
+            self.conv2 = nn.Conv2d(out_channels, out_channels, kernel_size=1, stride=stride, padding=0)
         else:
             # for ResNet18 and 34, connect input directly to (3x3) kernel (skip first (1x1))
             self.conv2 = nn.Conv2d(in_channels, out_channels, kernel_size=3, stride=stride, padding=1)
@@ -93,11 +94,11 @@ class ResNet(nn.Module):
         x = self.avgpool(x)
         x = x.reshape(x.shape[0], -1)
         
-        x = self.bn2(x)
-        x = self.drop(x)
-        x = self.fc1(x)
-        x = self.bn3(x)
-        x = self.relu2(x)
+        # x = self.bn2(x)
+        # x = self.drop(x)
+        # x = self.fc1(x)
+        # x = self.bn3(x)
+        # x = self.relu2(x)
         return x
 
     def forward(self, x):
@@ -139,9 +140,11 @@ def ResNet152(img_channels=3, num_classes=1000, emb_size=1000):
 
 
 def test():
-    net = ResNet18(img_channels=3, num_classes=17000)
+    net = ResNet50(img_channels=3, num_classes=17000)
     #y = net(torch.randn(4, 3, 224, 224)).to("cuda")
-    y = net.encode(torch.randn(4, 3, 224, 224)).to("cuda")
+    y = net.encode(torch.randn(2, 3, 224, 224)).to("cuda")
     print(y)
     print(y.size())
     print(net)
+
+#test()

@@ -12,14 +12,17 @@ import pandas as pd
 from PIL import Image
 from scipy.spatial import distance
 from sklearn.datasets import fetch_lfw_pairs
-from res_net import ResNet18
-from casia_dataset import CasiaDataset
-from validation import validate
+import calendar;
+import time;
 
-batch_size = 64
-model_path = "model.pt"
+from res_net import ResNet18, ResNet50
+from casia_dataset import CasiaDataset
+from validation import validate, print_ROC
+
+batch_size = 8
+model_path = "./model.pt"
 num_classes = 10575   
-embeding_size = 512
+embeding_size = 2048
 
 # Get cpu or gpu device for training.
 device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -43,7 +46,8 @@ train_dataloader_short = DataLoader(dataset_short, batch_size=batch_size, shuffl
 
 
 
-model = ResNet18(num_classes=num_classes, emb_size=embeding_size).to(device)
+#model = ResNet18(num_classes=num_classes, emb_size=embeding_size).to(device)
+model = ResNet50(num_classes=num_classes, emb_size=embeding_size).to(device)
 criterion = nn.CrossEntropyLoss()
 optimizer = optim.Adam(model.parameters(), lr=0.1) 
 
@@ -56,13 +60,20 @@ accs = losses = test_vers =  []
 device = "cuda" if torch.cuda.is_available() else "cpu"
 print("Using {} device".format(device))
 
+# Create output files
+ts = calendar.timegm(time.gmtime())
+TARS_and_FARs_file = open(f"./outputs/all_TARs_and_FARs_{ts}.out", "w").close()
+test_vers_file = open(f"./outputs/test_accs{ts}.out", "w").close()
+train_accs_file = open(f"./outputs/train_accs{ts}.out", "w").close()
+loss_file = open(f"./outputs/loss{ts}.out", "w").close()
+
 #training
 i = 0
-best_test = 0
+best_test_ver = 0
 for e in range(100): 
     model.train()
     loss_sum = correct = total = 0
-    for b, (inputs, labels) in enumerate(train_dataloader_short):
+    for b, (inputs, labels) in enumerate(train_dataloader):
         inputs, labels = inputs.to(device), labels.to(device)
         optimizer.zero_grad()
         outputs = model(inputs)
@@ -78,18 +89,24 @@ for e in range(100):
         correct += predicted.eq(labels.data).cpu().sum() 
         train_acc = (100. * correct / total).item()
         
-        if i>0 and i%train_print_period == 0:
+        if i>0 and i % train_print_period == 0:
             print("iteration:", i, "epoch:", e, "batch:", b, "avg loss:", "%.3f" % avg_loss, "epoch avg train acc:", train_acc)
+            with open(f"./outputs/train_accs{ts}.out", "a") as train_accs_file:
+                train_accs_file.write(f'{train_acc}\n')
+            with open(f"./outputs/loss{ts}.out", "a") as loss_file:
+                loss_file.write(f'{avg_loss}\n')
             accs.append(train_acc)
             losses.append(avg_loss)
 
         if i>0 and i%test_period == 0:
-            test_ver = validate(model, lfw_pairs, lfw_labels, device)
+            test_ver = validate(model, lfw_pairs, lfw_labels, device, ts)
             model.train()
             print("epoch:", e, "test ver: ", test_ver)
             test_vers.append(test_ver)
-            if test_ver > best_test:
-                best_test = test_ver                
+
+            if test_ver > best_test_ver:  
+                best_test_ver = test_ver 
+                print_ROC(model, lfw_pairs, lfw_labels, device)         
                 torch.save(model.state_dict(), model_path)
 
         if i == 20000 or i == 28000:
@@ -99,6 +116,10 @@ for e in range(100):
             break
 
         i+=1
+
+TARS_and_FARs_file.close()
+test_vers_file.close()
+
 
 
 print("acc")
