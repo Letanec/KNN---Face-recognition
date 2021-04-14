@@ -1,3 +1,4 @@
+from torch import nn
 class Block(nn.Module):
     def __init__(self, num_layers, in_channels, out_channels, identity_downsample=None, stride=1):
         assert num_layers in [18, 34, 50, 101, 152], "should be a a valid architecture"

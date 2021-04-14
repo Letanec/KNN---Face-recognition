@@ -1,3 +1,9 @@
+from torch.utils.data import Dataset
+import pandas as pd
+import os
+import torch
+from PIL import Image
+
 class CasiaDataset(Dataset):
   def __init__(self, csv_file, root_dir, transform=None):
     self.annotations = pd.read_csv(csv_file)

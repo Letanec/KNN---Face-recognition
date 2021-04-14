@@ -1,4 +1,8 @@
-def validate(model):
+import torch
+import numpy as np
+import matplotlib.pyplot as plt
+
+def validate(model, lfw_pairs, lfw_labels, device):
     model.eval()
     with torch.no_grad():
         FARs = TARs = []
@@ -27,5 +31,5 @@ def validate(model):
             TARs.append(TAR)
         print("fars", FARs)
         print("tars", TARs)
-        plt.plot(FARs, TARs)
-        plt.show()
+        # plt.plot(FARs, TARs)
+        # plt.show()

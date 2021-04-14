@@ -21,6 +21,10 @@ model_path = "model.pt"
 num_classes = 10575   
 embeding_size = 512
 
+# Get cpu or gpu device for training.
+device = "cuda" if torch.cuda.is_available() else "cpu"
+print("Using {} device".format(device))
+
 #LFW DATASET
 fetch_lfw_pairs = fetch_lfw_pairs(subset='10_folds', funneled=False, color=True, resize=224/250, slice_=None)
 lfw_pairs = fetch_lfw_pairs.pairs
@@ -31,7 +35,7 @@ print(lfw_pairs.shape)
 
 #CASIA DATASET
 transform=Compose([Resize(224), ToTensor()]) 
-dataset = CasiaDataset(csv_file = 'CASIA/casia2.csv', root_dir = 'CASIA', transform = transform)
+dataset = CasiaDataset(csv_file = '../../CASIA/casia2.csv', root_dir = '../../CASIA', transform = transform) 
 train_dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
 short_len = 10000
 dataset_short, _ = torch.utils.data.random_split(dataset, [short_len, len(dataset) - short_len])
@@ -47,6 +51,10 @@ train_print_period = 10
 test_period = 100
 
 accs = losses = test_vers =  []
+
+# Get cpu or gpu device for training.
+device = "cuda" if torch.cuda.is_available() else "cpu"
+print("Using {} device".format(device))
 
 #training
 i = 0
@@ -76,7 +84,7 @@ for e in range(100):
             losses.append(avg_loss)
 
         if i>0 and i%test_period == 0:
-            test_ver = validate(model)
+            test_ver = validate(model, lfw_pairs, lfw_labels, device)
             model.train()
             print("epoch:", e, "test ver: ", test_ver)
             test_vers.append(test_ver)

@@ -10,7 +10,7 @@ import numpy as np
 from sklearn.manifold import TSNE
 import pandas as pd
 from PIL import Image
-from google.colab import drive
+#from google.colab import drive
 
 batch_size = 8
 epoch_num = 1000
@@ -53,7 +53,7 @@ transform=Compose([Resize(224), ToTensor()])
 
 # ODKOMENTOVAT JEDNO
 # LFW dataset
-dataset = LFWDataset(csv_file = 'lfw-deepfunneled/lfw-deepfunneled/lfw.csv', root_dir = 'lfw-deepfunneled/lfw-deepfunneled', transform = transform) 
+dataset = LFWDataset(csv_file = '../../CASIA/casia2.csv', root_dir = '../../CASIA', transform = transform) 
 # CASIA dataset
 #dataset = LFWDataset(csv_file = 'CASIA/casia2.csv', root_dir = 'CASIA', transform = transform)
 
