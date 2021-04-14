@@ -50,6 +50,7 @@ accs = losses = test_vers =  []
 
 #training
 i = 0
+best_test = 0
 for e in range(100): 
     model.train()
     loss_sum = correct = total = 0
@@ -69,7 +70,7 @@ for e in range(100):
         correct += predicted.eq(labels.data).cpu().sum() 
         train_acc = (100. * correct / total).item()
         
-        if i>0 i%train_print_period == 0:
+        if i>0 and i%train_print_period == 0:
             print("iteration:", i, "epoch:", e, "batch:", b, "avg loss:", "%.3f" % avg_loss, "epoch avg train acc:", train_acc)
             accs.append(train_acc)
             losses.append(avg_loss)
@@ -79,6 +80,9 @@ for e in range(100):
             model.train()
             print("epoch:", e, "test ver: ", test_ver)
             test_vers.append(test_ver)
+            if test_ver > best_test:
+                best_test = test_ver                
+                torch.save(model.state_dict(), model_path)
 
         if i == 20000 or i == 28000:
             optimizer.param_groups[0]['lr'] /= 10
@@ -88,7 +92,6 @@ for e in range(100):
 
         i+=1
 
-torch.save(model.state_dict(), model_path)
 
 print("acc")
 plt.plot(accs)
