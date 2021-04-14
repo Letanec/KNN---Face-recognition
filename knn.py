@@ -22,7 +22,7 @@ from validation import validate, print_ROC
 batch_size = 8
 model_path = "./model.pt"
 num_classes = 10575   
-embeding_size = 2048
+embeding_size = 512 #Resnet18: 512 # resnet 50: 2048
 
 # Get cpu or gpu device for training.
 device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -44,10 +44,8 @@ short_len = 10000
 dataset_short, _ = torch.utils.data.random_split(dataset, [short_len, len(dataset) - short_len])
 train_dataloader_short = DataLoader(dataset_short, batch_size=batch_size, shuffle=True)
 
-
-
-#model = ResNet18(num_classes=num_classes, emb_size=embeding_size).to(device)
-model = ResNet50(num_classes=num_classes, emb_size=embeding_size).to(device)
+model = ResNet18(num_classes=num_classes, emb_size=embeding_size).to(device)
+#model = ResNet50(num_classes=num_classes, emb_size=embeding_size).to(device)
 criterion = nn.CrossEntropyLoss()
 optimizer = optim.Adam(model.parameters(), lr=0.1) 
 
