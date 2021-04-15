@@ -19,10 +19,13 @@ from res_net import ResNet18, ResNet50
 from casia_dataset import CasiaDataset
 from validation import validate, print_ROC
 
-batch_size = 8
+batch_size = 128
 model_path = "./model.pt"
 num_classes = 10575   
 embeding_size = 512 #Resnet18: 512 # resnet 50: 2048
+train_print_period = 10
+test_period = 1500
+accs = losses = test_vers =  []
 
 # Get cpu or gpu device for training.
 device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -49,11 +52,6 @@ model = ResNet18(num_classes=num_classes, emb_size=embeding_size).to(device)
 criterion = nn.CrossEntropyLoss()
 optimizer = optim.Adam(model.parameters(), lr=0.1) 
 
-train_print_period = 10
-test_period = 100
-
-accs = losses = test_vers =  []
-
 # Get cpu or gpu device for training.
 device = "cuda" if torch.cuda.is_available() else "cpu"
 print("Using {} device".format(device))
@@ -68,7 +66,7 @@ loss_file = open(f"./outputs/loss{ts}.out", "w").close()
 #training
 i = 0
 best_test_ver = 0
-for e in range(100): 
+for e in range(6): 
     model.train()
     loss_sum = correct = total = 0
     for b, (inputs, labels) in enumerate(train_dataloader):
@@ -104,7 +102,7 @@ for e in range(100):
 
             if test_ver > best_test_ver:  
                 best_test_ver = test_ver 
-                print_ROC(model, lfw_pairs, lfw_labels, device)         
+                #print_ROC(model, lfw_pairs, lfw_labels, device)         
                 torch.save(model.state_dict(), model_path)
 
         if i == 20000 or i == 28000:
