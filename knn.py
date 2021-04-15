@@ -19,7 +19,8 @@ from res_net import ResNet18, ResNet50
 from casia_dataset import CasiaDataset
 from validation import validate, print_ROC
 
-batch_size = 128
+# Constants
+batch_size = 32
 model_path = "./model.pt"
 num_classes = 10575   
 embeding_size = 512 #Resnet18: 512 # resnet 50: 2048
@@ -32,29 +33,25 @@ device = "cuda" if torch.cuda.is_available() else "cpu"
 print("Using {} device".format(device))
 
 #LFW DATASET
-fetch_lfw_pairs = fetch_lfw_pairs(subset='10_folds', funneled=False, color=True, resize=224/250, slice_=None)
-lfw_pairs = fetch_lfw_pairs.pairs
-lfw_labels = fetch_lfw_pairs.target
-lfw_pairs = lfw_pairs.transpose((0, 1, 4, 2, 3))
-lfw_pairs = Tensor(lfw_pairs)
-print(lfw_pairs.shape)
+# fetch_lfw_pairs = fetch_lfw_pairs(subset='10_folds', funneled=False, color=True, resize=96/250, slice_=None) #lepší začít s nižším rozlišením než 224
+# lfw_pairs = fetch_lfw_pairs.pairs
+# lfw_labels = fetch_lfw_pairs.target
+# lfw_pairs = lfw_pairs.transpose((0, 1, 4, 2, 3))
+# lfw_pairs = Tensor(lfw_pairs)
+# print(lfw_pairs.shape)
+
 
 #CASIA DATASET
-transform=Compose([Resize(224), ToTensor()]) 
+transform=Compose([Resize(96), ToTensor()]) 
 dataset = CasiaDataset(csv_file = '../../CASIA/casia2.csv', root_dir = '../../CASIA', transform = transform) 
 train_dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
 short_len = 10000
 dataset_short, _ = torch.utils.data.random_split(dataset, [short_len, len(dataset) - short_len])
 train_dataloader_short = DataLoader(dataset_short, batch_size=batch_size, shuffle=True)
 
-model = ResNet18(num_classes=num_classes, emb_size=embeding_size).to(device)
-#model = ResNet50(num_classes=num_classes, emb_size=embeding_size).to(device)
+model = ResNet50(num_classes=num_classes, emb_size=embeding_size).to(device)
 criterion = nn.CrossEntropyLoss()
-optimizer = optim.Adam(model.parameters(), lr=0.1) 
-
-# Get cpu or gpu device for training.
-device = "cuda" if torch.cuda.is_available() else "cpu"
-print("Using {} device".format(device))
+optimizer = optim.Adam(model.parameters(), lr=0.001) #rozumná lr je 0.001
 
 # Create output files
 ts = calendar.timegm(time.gmtime())
@@ -94,16 +91,16 @@ for e in range(6):
             accs.append(train_acc)
             losses.append(avg_loss)
 
-        if i>0 and i%test_period == 0:
-            test_ver = validate(model, lfw_pairs, lfw_labels, device, ts)
-            model.train()
-            print("epoch:", e, "test ver: ", test_ver)
-            test_vers.append(test_ver)
+        # if i>0 and i%test_period == 0:
+        #     test_ver = validate(model, lfw_pairs, lfw_labels, device, ts)
+        #     model.train()
+        #     print("epoch:", e, "test ver: ", test_ver)
+        #     test_vers.append(test_ver)
 
-            if test_ver > best_test_ver:  
-                best_test_ver = test_ver 
-                #print_ROC(model, lfw_pairs, lfw_labels, device)         
-                torch.save(model.state_dict(), model_path)
+        #     if test_ver > best_test_ver:  
+        #         best_test_ver = test_ver 
+        #         #print_ROC(model, lfw_pairs, lfw_labels, device)         
+        #         torch.save(model.state_dict(), model_path)
 
         if i == 20000 or i == 28000:
             optimizer.param_groups[0]['lr'] /= 10

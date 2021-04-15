@@ -42,7 +42,7 @@ class Block(nn.Module):
         x = self.relu(x)
         return x
 
-
+# Vzít VGG předtrénovanou síť 
 class ResNet(nn.Module):
     def __init__(self, num_layers, block, image_channels, num_classes, emb_size):
         assert num_layers in [18, 34, 50, 101, 152], f'ResNet{num_layers}: Unknown architecture! Number of layers has ' \
@@ -94,17 +94,17 @@ class ResNet(nn.Module):
         x = self.avgpool(x)
         x = x.reshape(x.shape[0], -1)
         
-        # x = self.bn2(x)
-        # x = self.drop(x)
-        # x = self.fc1(x)
-        # x = self.bn3(x)
-        # x = self.relu2(x)
+        x = self.bn2(x)
+        x = self.drop(x)
+        x = self.fc1(x)
+        x = self.bn3(x)
         return x
 
     def forward(self, x):
         x = self.encode(x)   
+        x = self.relu2(x) 
         x = self.fc2(x)
-        x = self.softmax(x)
+        #x = self.softmax(x)
         return x
 
     def make_layers(self, num_layers, block, num_residual_blocks, intermediate_channels, stride):
