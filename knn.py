@@ -85,14 +85,15 @@ def main():
 
             if i>0 and i % ver_period == 0:
                 ver = verify(model, casia_pairs_dataloader, device)
-                ver_log.print(i,e,ver)
                 tf = tars_fars(model, casia_pairs_dataloader, device)
                 model.train() 
+                ver_log.print(i,e,ver)
                 tf_log.print(i,e,tf)
                 print_ROC(tf[0], tf[1])
                 if ver > best_ver:  
                     best_ver = ver     
                     torch.save(model.state_dict(), model_path)
+                
 
             if i>0 and i % lfw_ver_period == 0:
                 lfw_ver = verify(model, lfw_pairs_dataloader, device)
@@ -100,6 +101,7 @@ def main():
                 model.train()
                 lfw_ver_log.print(i,e,lfw_ver)
                 lfw_tf_log.print(i,e,lfw_tf)
+                print_ROC(lfw_tf[0], lfw_tf[1])
 
             i+=1
 
