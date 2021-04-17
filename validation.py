@@ -1,19 +1,18 @@
 import torch
 import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
 
-total_positives = total_negatives = 3000
-FAR_limit = 10e-6
-max_dist = 10**16
-step = 10**14
-
-def print_ROC(model, lfw_pairs, lfw_labels, device):
-    pairs_dist = calculatePairDistances(model, lfw_pairs, device)
+def tars_fars(model, dataloader, device):
+    pairs_dist = calculate_pair_distances(model, dataloader, device)
+    max_dist = max(pairs_dist)
+    labels = extract_labels(dataloader)
+    total_positives = sum(labels)
+    total_negatives = len(labels) - total_positives 
     FARs = TARs = []
-    for threshold in range(0, max_dist, step):   #TODO
+    for threshold in np.arange(0, max_dist, max_dist/100):  
         true_positives = false_positives =  0
-        for pair_dist, label in zip(pairs_dist, lfw_labels):  
-            #print(pair_dist)
+        for pair_dist, label in zip(pairs_dist, labels):  
             same_person = pair_dist < threshold
             if same_person:
                 if label:
@@ -22,22 +21,24 @@ def print_ROC(model, lfw_pairs, lfw_labels, device):
                     false_positives += 1
         FAR = false_positives / total_negatives
         TAR = true_positives / total_positives
-        
-        FARs.append(FAR)
-        TARs.append(TAR)
-    print("fars", FARs)
-    print("tars", TARs)
+        FARs.append(FAR.item())
+        TARs.append(TAR.item())
+    return (TARs, FARs)
+    
+def print_ROC(TARs, FARs):
     plt.plot(FARs, TARs)
     plt.show()
 
-def validate(model, lfw_pairs, lfw_labels, device, time_stamp):
+def verify(model, dataloader, device, FAR_limit = 10e-6):
     TAR = 0
-    pairs_dist = calculatePairDistances(model, lfw_pairs, device)
-
-    for threshold in range(0, max_dist, step):   #TODO
+    pairs_dist = calculate_pair_distances(model, dataloader, device)
+    max_dist = max(pairs_dist)
+    labels = extract_labels(dataloader)
+    total_positives = sum(labels)
+    total_negatives = len(labels) - total_positives
+    for threshold in np.arange(0, max_dist, max_dist/100):  
         true_positives = false_positives =  0
-        for pair_dist, label in zip(pairs_dist, lfw_labels):  
-            #print(pair_dist)
+        for pair_dist, label in zip(pairs_dist, labels):  
             same_person = pair_dist < threshold
             if same_person:
                 if label:
@@ -46,22 +47,34 @@ def validate(model, lfw_pairs, lfw_labels, device, time_stamp):
                     false_positives += 1
         FAR = false_positives / total_negatives
         if FAR > FAR_limit:
-            return TAR
+            return TAR.item()
         TAR = true_positives / total_positives
-        with open(f"./outputs/all_TARs_and_FARs_{time_stamp}.out", 'a') as f:
-            f.write(f'{TAR}\n')
-        with open(f"./outputs/test_accs{time_stamp}.out", 'a') as f:
-            f.write(f'{TAR}, {FAR}\n')
+    return TAR.item()
 
-    return TAR;
-
-def calculatePairDistances(model, lfw_pairs, device):
+def validate(model, dataloader, device):   
+    correct = total = 0 
     model.eval()
-    with torch.no_grad():
-        pairs_dist = np.zeros(len(lfw_pairs))
-        for i, pair in enumerate(lfw_pairs):
-            emb_1, emb_2 = model.encode(pair.to(device)).cpu()
-            #pairs_dist[i] = distance.euclidean(emb_1, emb_2)
-            #pairs_dist[i] = distance.cosine(emb_1, emb_2)
-            pairs_dist[i] = np.linalg.norm(emb_1 - emb_2)
+    with torch.no_grad():    
+        for inputs, labels in dataloader:
+            inputs, labels = inputs.to(device), labels.to(device)
+            outputs = model(inputs)
+            predicted = torch.argmax(outputs.data, dim=1)
+            correct += predicted.eq(labels.data).cpu().sum()
+            total += labels.size(0)
+    return (correct / total).item()
+
+def calculate_pair_distances(model, dataloader, device):
+    model.eval()
+    pairs_dist = []
+    with torch.no_grad():    
+        for img_1, img_2, _ in dataloader:
+            emb_1 = model.encode(img_1.to(device)).cpu()
+            emb_2 = model.encode(img_2.to(device)).cpu()
+            pairs_dist.append(np.linalg.norm(emb_1 - emb_2))
     return pairs_dist
+
+def extract_labels(dataloader):
+    labels = []
+    for _, _, label in dataloader:
+        labels.append(label)
+    return labels
