@@ -55,7 +55,7 @@ def main():
     # Training
     i = 0
     best_ver = 0
-    for e in range(15): 
+    for e in range(6): 
         model.train()
         loss_sum = correct = total = 0
         for b, (inputs, labels) in enumerate(train_dataloader):
