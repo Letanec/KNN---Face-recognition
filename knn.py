@@ -15,6 +15,7 @@ import time
 from res_net import ResNet18, ResNet50
 from validation import verify, validate, tars_fars, print_ROC
 from helpers import get_datasets, create_logs
+from pretrained import PretrainedResNet50
 import argparse
 
 def main():
@@ -24,6 +25,7 @@ def main():
     parser.add_argument("-v", "--test_period", help="set period of validation", action="store", type=int, default=1000)
     parser.add_argument("-p", "--ver_period", help="set period of verification", action="store", type=int, default=1500)
     parser.add_argument("-l", "--lfw_ver_period", help="set period of lfw verification", action="store", type=int, default=6000)  
+    parser.add_argument("--pretrained", help="use pretrained nn", action="store_true")  
     args = parser.parse_args()
     
     # Constants
@@ -48,7 +50,10 @@ def main():
     acc_log, test_acc_log, ver_log, lfw_ver_log, loss_log, tf_log, lfw_tf_log = create_logs()
 
     # Model, criterionm, optimizer
-    model = ResNet50(num_classes=num_classes, emb_size=embeding_size).to(device)
+    if args.pretrained:
+        model = PretrainedResNet50(num_classes=num_classes, emb_size=embeding_size).to(device)
+    else:
+        model = ResNet50(num_classes=num_classes, emb_size=embeding_size).to(device)
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters(), lr=0.001) 
 
