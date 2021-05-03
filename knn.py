@@ -14,17 +14,19 @@ import calendar
 import time
 from res_net import ResNet18, ResNet50
 from validation import verify, validate, tars_fars, print_ROC
-from helpers import get_datasets, create_logs
+from custom_dataset import get_datasets
+from log import create_logs
 from pretrained import PretrainedResNet50
+from arcface import ArcFace
 import argparse
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("-b", "--batch_size", help="set batch size", action="store", type=int, default=64)
     parser.add_argument("-t", "--train_print_period", help="set period of printing training progress", action="store", type=int, default=100)
-    parser.add_argument("-v", "--test_period", help="set period of validation", action="store", type=int, default=1000)
-    parser.add_argument("-p", "--ver_period", help="set period of verification", action="store", type=int, default=1500)
-    parser.add_argument("-l", "--lfw_ver_period", help="set period of lfw verification", action="store", type=int, default=6000)  
+    parser.add_argument("-v", "--test_period", help="set period of validation", action="store", type=int, default=5000)
+    parser.add_argument("-e", "--ver_period", help="set period of verification", action="store", type=int, default=5000)
+    parser.add_argument("-l", "--lfw_ver_period", help="set period of lfw verification", action="store", type=int, default=5000)  
     parser.add_argument("--pretrained", help="use pretrained nn", action="store_true")  
     args = parser.parse_args()
     
@@ -45,25 +47,25 @@ def main():
 
     # Datasets
     train_dataloader, test_dataloader, casia_pairs_dataloader, lfw_pairs_dataloader = get_datasets(batch_size)
-    
     # Logs
     acc_log, test_acc_log, ver_log, lfw_ver_log, loss_log, tf_log, lfw_tf_log = create_logs()
-
     # Model, criterionm, optimizer
     if args.pretrained:
         model = PretrainedResNet50(num_classes=num_classes, emb_size=embeding_size).to(device)
     else:
         model = ResNet50(num_classes=num_classes, emb_size=embeding_size).to(device)
-    criterion = nn.CrossEntropyLoss()
+    criterion = ArcFace()
     optimizer = optim.Adam(model.parameters(), lr=0.001) 
 
+    
     # Training
-    i = 0
+    iter = 0
     best_ver = 0
-    for e in range(6): 
+    train_acc = 0
+    for epoch in range(6): 
         model.train()
         loss_sum = correct = total = 0
-        for b, (inputs, labels) in enumerate(train_dataloader):
+        for batch, (inputs, labels) in enumerate(train_dataloader):
             inputs, labels = inputs.to(device), labels.to(device)
             optimizer.zero_grad()
             outputs = model(inputs)
@@ -72,47 +74,49 @@ def main():
             optimizer.step()
 
             loss_sum += loss.item()
-            avg_loss = loss_sum / (b+1)
+            avg_loss = loss_sum / (batch+1)
 
             predicted = torch.argmax(outputs.data, dim=1)
             total += labels.size(0)
-            correct += predicted.eq(labels.data).cpu().sum() 
-            
-            if i>0 and i % train_print_period == 0:
-                train_acc = (correct / total).item()
-                acc_log.print(i,e,train_acc)
-                loss_log.print(i,e,avg_loss)
+            correct += predicted.eq(labels.data).cpu().sum()
 
-            if i>0 and i % test_period == 0:
+            
+            
+            if iter > 0 and iter % train_print_period == 0:
+                train_acc = (correct / total).item()
+                acc_log.print(iter,epoch,train_acc)
+                loss_log.print(iter,epoch,avg_loss)
+
+            if iter > 0 and iter % test_period == 0:
                 with torch.no_grad():
                     test_acc = validate(model, test_dataloader, device)
-                    test_acc_log.print(i,e,test_acc)
+                    test_acc_log.print(iter, epoch, test_acc)
                 model.train()
 
-            if i>0 and i % ver_period == 0:
+            if iter > 0 and iter % ver_period == 0:
                 with torch.no_grad():
                     ver = verify(model, casia_pairs_dataloader, device)
                     tf = tars_fars(model, casia_pairs_dataloader, device)
-                    ver_log.print(i,e,ver)
-                    tf_log.print(i,e,tf)
+                    ver_log.print(iter, epoch, ver)
+                    tf_log.print(iter, epoch, tf)
                     #print_ROC(tf[0], tf[1])
-                    if ver > best_ver:  
+                    if ver > best_ver:
                         best_ver = ver     
-                        torch.save(model.state_dict(), model_path)
+                        #model.save_model()
                 model.train() 
                 
 
-            if i>0 and i % lfw_ver_period == 0:
+            if iter > 0 and iter % lfw_ver_period == 0:
                 with torch.no_grad():
                     lfw_ver = verify(model, lfw_pairs_dataloader, device)
                     lfw_tf = tars_fars(model, lfw_pairs_dataloader, device)
-                    lfw_ver_log.print(i,e,lfw_ver)
-                    lfw_tf_log.print(i,e,lfw_tf)
+                    lfw_ver_log.print(iter, epoch, lfw_ver)
+                    lfw_tf_log.print(iter, epoch, lfw_tf)
                     #print_ROC(lfw_tf[0], lfw_tf[1])
                 model.train()
 
-            i+=1
-
+            iter+=1
+        model.save_model(train_acc)
 
 if __name__ == "__main__":
     main()

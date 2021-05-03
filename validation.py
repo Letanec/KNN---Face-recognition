@@ -2,6 +2,7 @@ import torch
 import numpy as np
 import matplotlib.pyplot as plt
 import numpy as np
+from scipy.spatial import distance
 
 def tars_fars(model, dataloader, device):
     pairs_dist = calculate_pair_distances(model, dataloader, device)
@@ -70,7 +71,8 @@ def calculate_pair_distances(model, dataloader, device):
         for img_1, img_2, _ in dataloader:
             emb_1 = model.encode(img_1.to(device)).cpu()
             emb_2 = model.encode(img_2.to(device)).cpu()
-            pairs_dist.append(np.linalg.norm(emb_1 - emb_2))
+            #pairs_dist.append(np.linalg.norm(emb_1 - emb_2)) - euklidovská vzdálenost
+            pairs_dist.append(distance.cosine(emb_1, emb_2))
     return pairs_dist
 
 def extract_labels(dataloader):
