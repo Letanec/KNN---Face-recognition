@@ -4,6 +4,12 @@
 #ver 1e-3 0.936 mask 0.737
 #ver 1e-4 0.323 mask 0.230
 
+#l = Lfw_verification(data_dir, pairs_path, device)
+#ver = l.verify(resnet, 1e-4)
+#print(ver)
+
+#from google.colab import drive
+#drive.mount('/content/drive')
 #!pip install facenet_pytorch
 #!tar -xvzf  /content/drive/MyDrive/KNN/lfw.tgz
 #!unzip /content/drive/MyDrive/KNN/CASIA.zip
@@ -28,8 +34,9 @@ import calendar
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 print('Running on device: {}'.format(device))
 
-#dataset_dir = 'casia_with_masks'              
-dataset_dir = 'CASIA'
+
+dataset_dir = 'casia_with_masks'              
+#dataset_dir = 'CASIA'
 batch_size = 32                  
 transformation = transforms.Compose([
     transforms.Resize(96), #160),
@@ -43,6 +50,11 @@ np.random.shuffle(indexes)
 train_idxs = indexes[:int(0.9 * len(indexes))]        
 test_idxs = indexes[int(0.9 * len(indexes)):]
 
+indexes_no_masks = np.array([i for i in range(len(dataset)) if "m." not in dataset.imgs[i][0]])
+np.random.shuffle(indexes_no_masks)
+train_idxs_no_masks = indexes_no_masks[:int(0.9 * len(indexes))]        
+test_idxs_no_masks = indexes_no_masks[int(0.9 * len(indexes)):]
+
 train_loader = DataLoader(
     dataset,
     batch_size=batch_size,
@@ -53,6 +65,18 @@ test_loader = DataLoader(
     dataset,
     batch_size=batch_size,
     sampler=SubsetRandomSampler(test_idxs)
+)
+
+train_loader_no_masks = DataLoader(
+    dataset,
+    batch_size=batch_size,
+    sampler=SubsetRandomSampler(train_idxs_no_masks)
+)
+
+test_loader_no_masks = DataLoader(
+    dataset,
+    batch_size=batch_size,
+    sampler=SubsetRandomSampler(test_idxs_no_masks)
 )
 
 class Pretrained(nn.Module):
@@ -81,6 +105,7 @@ class Pretrained(nn.Module):
         #logits = x_norm.matmul(w_norm.T)
         logits = self.last_fc(x)
         return logits
+
 
 #outputs [B,10] targets [B,]
 class ArcFace(nn.Module):
@@ -111,6 +136,7 @@ class ArcFace(nn.Module):
         expanded = diff.expand(-1, outputs.shape[1])
         outputs = self.scale * (outputs + (expanded * one_hot_mask))
         return criterion(outputs, targets)
+
 
 class Lfw_verification:
   def __init__(self, lfw_root, lfw_pairs, device):
@@ -349,7 +375,6 @@ class Lfw_verification:
     plt.show()
 
 
-
 #MAIN
 
 lfw_ver = Lfw_verification('lfw_with_masks','drive/MyDrive/KNN/pairs.txt',device)
@@ -363,15 +388,15 @@ optimizer = optim.Adam(model.parameters(), lr=1e-4) #0.0001
 #scheduler = MultiStepLR(optimizer, [5, 10])
 criterion = ArcFace() if arcface else nn.CrossEntropyLoss()
 
-lfw_ver_interval = 100
-train_acc_interval = 10
+lfw_ver_interval = 1000
+train_acc_interval = 100
 
 # Training
 iter = 0
 train_acc = 0
 for epoch in range(6): 
     loss_sum = correct = total = 0
-    for batch, (inputs, labels) in enumerate(train_loader):    
+    for batch, (inputs, labels) in enumerate(train_loader_no_masks):    
 
         model.train()
         #model.pretrained_model.eval()
