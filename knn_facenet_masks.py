@@ -39,9 +39,10 @@ dataset_dir = 'casia_with_masks'
 #dataset_dir = 'CASIA'
 batch_size = 32                  
 transformation = transforms.Compose([
-    transforms.Resize(96), #160),
+    transforms.Resize(160), #160),
     np.float32,
     transforms.ToTensor(),
+    fixed_image_standardization
 ])
 dataset = datasets.ImageFolder(dataset_dir, transform=transformation)
 
@@ -82,7 +83,7 @@ test_loader_no_masks = DataLoader(
 class Pretrained(nn.Module):
     def __init__(self, num_classes):
         super(Pretrained, self).__init__()    
-        self.pretrained_model = InceptionResnetV1(classify=False, pretrained='vggface2')  
+        self.pretrained_model = InceptionResnetV1(classify=False, pretrained='casia-webface')  
         emb_size=512 #TODO
         #self.dropout = nn.Dropout(p=0.5, inplace=False)
         #self.batchNorm1d = nn.BatchNorm1d(emb_size)
@@ -100,10 +101,10 @@ class Pretrained(nn.Module):
 
     def forward(self, x):
         x = self.encode(x) 
-        #x_norm = F.normalize(x, p=2, dim=1) * 0.877
-        #w_norm = F.normalize(self.last_fc.weight, p=2, dim=1) * 0.877
-        #logits = x_norm.matmul(w_norm.T)
-        logits = self.last_fc(x)
+        x_norm = F.normalize(x, p=2, dim=1) * 0.877
+        w_norm = F.normalize(self.last_fc.weight, p=2, dim=1) * 0.877
+        logits = x_norm.matmul(w_norm.T)
+        #logits = self.last_fc(x)
         return logits
 
 
@@ -146,7 +147,7 @@ class Lfw_verification:
     self.device = device 
     #loader
     trans = transforms.Compose([ 
-      transforms.Resize(96),   #160
+      transforms.Resize(160),   #160
       np.float32,
       transforms.ToTensor(),
       fixed_image_standardization
@@ -155,7 +156,7 @@ class Lfw_verification:
     ds.samples = [(p, p) for p, _ in ds.samples]
     self.loader = DataLoader(
       ds,
-      num_workers = 2, # 0 if os.name == 'nt' else 8,
+      #num_workers = 2, # 0 if os.name == 'nt' else 8,
       batch_size=self.batch_size,
       sampler=SequentialSampler(ds)
     )
@@ -377,10 +378,10 @@ class Lfw_verification:
 
 #MAIN
 
-lfw_ver = Lfw_verification('lfw_with_masks','drive/MyDrive/KNN/pairs.txt',device)
+#lfw_ver = Lfw_verification('lfw_with_masks','drive/MyDrive/KNN/pairs.txt',device)
 lfw_ver_masks = Lfw_verification('lfw_with_masks','drive/MyDrive/KNN/pairs_with_masks.txt',device)
 
-arcface = False
+arcface = True
 model = Pretrained(10575).to(device)
 optimizer = optim.Adam(model.parameters(), lr=1e-4) #0.0001
 #optimizer = optim.Adam(filter(lambda p: p.requires_grad, model.parameters()), lr=0.001)
@@ -420,7 +421,7 @@ for epoch in range(6):
 
         if iter != 0 and iter%lfw_ver_interval == 0: 
           #print('ver = ', "{:.4f}".format(lfw_ver.verify(model)))
-          #print('ver masks =', "{:.4f}".format(lfw_ver_masks.verify(model)))
-          lfw_ver.print_roc(model)
+          print('ver with masks =', "{:.4f}".format(lfw_ver_masks.verify(model)))
+          #lfw_ver.print_roc(model)
         
         iter += 1
