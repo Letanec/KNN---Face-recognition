@@ -43,6 +43,7 @@ transformation = transforms.Compose([
     transforms.Resize(160), #96),
     np.float32,
     transforms.ToTensor(),
+    fixed_image_standardization
 ])
 dataset = datasets.ImageFolder(dataset_dir, transform=transformation)
 
