@@ -30,16 +30,17 @@ import matplotlib.pyplot as plt
 from sklearn.model_selection import KFold
 from scipy import interpolate
 import calendar
+import time
+from datetime import datetime
 
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 print('Running on device: {}'.format(device))
 
-
-dataset_dir = 'casia_with_masks'              
+dataset_dir = 'datasets/casia_with_masks'              
 #dataset_dir = 'CASIA'
-batch_size = 32                  
+batch_size = 52                  
 transformation = transforms.Compose([
-    transforms.Resize(96), #160),
+    transforms.Resize(160), #96),
     np.float32,
     transforms.ToTensor(),
 ])
@@ -60,19 +61,16 @@ train_loader = DataLoader(
     batch_size=batch_size,
     sampler=SubsetRandomSampler(train_idxs)
 )
-
 test_loader = DataLoader(
     dataset,
     batch_size=batch_size,
     sampler=SubsetRandomSampler(test_idxs)
 )
-
 train_loader_no_masks = DataLoader(
     dataset,
     batch_size=batch_size,
     sampler=SubsetRandomSampler(train_idxs_no_masks)
 )
-
 test_loader_no_masks = DataLoader(
     dataset,
     batch_size=batch_size,
@@ -82,7 +80,7 @@ test_loader_no_masks = DataLoader(
 class Pretrained(nn.Module):
     def __init__(self, num_classes):
         super(Pretrained, self).__init__()    
-        self.pretrained_model = InceptionResnetV1(classify=False, pretrained='vggface2')  
+        self.pretrained_model = InceptionResnetV1(classify=False, pretrained='casia-webface')  
         emb_size=512 #TODO
         #self.dropout = nn.Dropout(p=0.5, inplace=False)
         #self.batchNorm1d = nn.BatchNorm1d(emb_size)
@@ -90,7 +88,9 @@ class Pretrained(nn.Module):
         self.last_fc = nn.Linear(emb_size, num_classes, bias=False)
 
     def save_model(self, train_acc):
-        model_path = "./models/resnet50_acc_" + '{:.3f}'.format(train_acc) + "_time_" + str(calendar.timegm(time.gmtime()))
+        now = datetime.now()
+        dt_string = now.strftime("%Y-%m-%d_%Hh%Mm%Ss")
+        model_path = "./models/acc_" + '{:.3f}'.format(train_acc) + "_time_" + dt_string
         torch.save(self.state_dict(), model_path)
         
     def encode(self, x):
@@ -100,10 +100,10 @@ class Pretrained(nn.Module):
 
     def forward(self, x):
         x = self.encode(x) 
-        #x_norm = F.normalize(x, p=2, dim=1) * 0.877
-        #w_norm = F.normalize(self.last_fc.weight, p=2, dim=1) * 0.877
-        #logits = x_norm.matmul(w_norm.T)
-        logits = self.last_fc(x)
+        x_norm = F.normalize(x, p=2, dim=1) * 0.877
+        w_norm = F.normalize(self.last_fc.weight, p=2, dim=1) * 0.877
+        logits = x_norm.matmul(w_norm.T)
+        #logits = self.last_fc(x)
         return logits
 
 
@@ -146,16 +146,16 @@ class Lfw_verification:
     self.device = device 
     #loader
     trans = transforms.Compose([ 
-      transforms.Resize(96),   #160
+      transforms.Resize(160),   #96
       np.float32,
       transforms.ToTensor(),
-      fixed_image_standardization
+      #fixed_image_standardization
     ])
     ds = datasets.ImageFolder(lfw_root, transform=trans)
     ds.samples = [(p, p) for p, _ in ds.samples]
     self.loader = DataLoader(
       ds,
-      num_workers = 2, # 0 if os.name == 'nt' else 8,
+      #num_workers = 0, # 0 if os.name == 'nt' else 8,
       batch_size=self.batch_size,
       sampler=SequentialSampler(ds)
     )
@@ -374,29 +374,51 @@ class Lfw_verification:
     plt.plot(FARs, TARs)
     plt.show()
 
+def validate(model, dataloader, device):
+    correct = total = 0 
+    model.eval()
+    with torch.no_grad():    
+        for inputs, labels in dataloader:
+            inputs, labels = inputs.to(device), labels.to(device)
+            outputs = model(inputs)
+            predicted = torch.argmax(outputs.data, dim=1)
+            correct += predicted.eq(labels.data).cpu().sum()
+            total += labels.size(0)
+    return (correct / total).item()
 
 #MAIN
 
-lfw_ver = Lfw_verification('lfw_with_masks','drive/MyDrive/KNN/pairs.txt',device)
-lfw_ver_masks = Lfw_verification('lfw_with_masks','drive/MyDrive/KNN/pairs_with_masks.txt',device)
+#lfw_ver = Lfw_verification('datasets/lfw_with_masks','drive/MyDrive/KNN/pairs.txt',device)
+lfw_ver_masks = Lfw_verification('datasets/lfw_with_masks','datasets/pairs_with_masks.txt',device)
 
-arcface = False
-model = Pretrained(10575).to(device)
+arcface = True
+load_model = True
+
+model = Pretrained(10575)
+if load_model:
+    model.load_state_dict(torch.load("./models/acc_0.920_time_1622177304"))
+model.to(device)
+
 optimizer = optim.Adam(model.parameters(), lr=1e-4) #0.0001
 #optimizer = optim.Adam(filter(lambda p: p.requires_grad, model.parameters()), lr=0.001)
 
 #scheduler = MultiStepLR(optimizer, [5, 10])
 criterion = ArcFace() if arcface else nn.CrossEntropyLoss()
 
-lfw_ver_interval = 1000
+'_' + str(calendar.timegm(time.gmtime()))
+lfw_ver_interval = 21000
 train_acc_interval = 100
+test_interval = 10000
+
+now = datetime.now()
+dt_string = now.strftime("%Y-%m-%d_%Hh%Mm%Ss")
 
 # Training
 iter = 0
 train_acc = 0
 for epoch in range(6): 
     loss_sum = correct = total = 0
-    for batch, (inputs, labels) in enumerate(train_loader_no_masks):    
+    for batch, (inputs, labels) in enumerate(train_loader):    
 
         model.train()
         #model.pretrained_model.eval()
@@ -416,11 +438,28 @@ for epoch in range(6):
         train_acc = (correct / total).item()
 
         if iter%train_acc_interval == 0:
-          print('iter',iter,'epoch',epoch,'t acc',train_acc,'loss',avg_loss)
+            print('iter',iter,'epoch',epoch,'train acc:',train_acc,'loss',avg_loss)
+            with open('train_' + dt_string+'.out', "a") as f_train:
+                f_train.write(str(iter) +" "+ str(train_acc) + "\n")
+            with open('loss_' + dt_string+'.out', "a") as f_loss:
+                f_loss.write(str(iter) +" "+ str(avg_loss) + "\n")
+
+        if iter > 0 and iter % test_interval == 0:
+            with torch.no_grad():
+                test_acc = validate(model, test_loader, device)
+                print('iter',iter,'epoch',epoch,'test acc:',test_acc)
+                with open('test_' + dt_string+'.out', "a") as f_test:
+                    f_test.write(str(iter) +" "+ str(test_acc) + "\n")
+            model.train()
 
         if iter != 0 and iter%lfw_ver_interval == 0: 
           #print('ver = ', "{:.4f}".format(lfw_ver.verify(model)))
-          #print('ver masks =', "{:.4f}".format(lfw_ver_masks.verify(model)))
-          lfw_ver.print_roc(model)
+          flw_acc = lfw_ver_masks.verify(model)
+          print('ver masks =', "{:.4f}".format(flw_acc))
+          with open('lfw_' + dt_string+'.out', "a") as f_lfw:
+            f_lfw.write(str(iter) +" "+ str(flw_acc) + "\n")
+          #lfw_ver.print_roc(model)
         
         iter += 1
+    model.save_model(train_acc)
+
