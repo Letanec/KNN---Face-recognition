@@ -43,14 +43,12 @@ test_idxs = indexes[int(0.9 * len(indexes)):]
 train_loader = DataLoader(
     dataset,
     batch_size=batch_size,
-    sampler=SubsetRandomSampler(train_idxs),
-    collate_fn=lambda x: default_collate(x).to(device)
+    sampler=SubsetRandomSampler(train_idxs)
 )
 test_loader = DataLoader(
     dataset,
     batch_size=batch_size,
-    sampler=SubsetRandomSampler(test_idxs),
-    collate_fn=lambda x: default_collate(x).to(device)
+    sampler=SubsetRandomSampler(test_idxs)
 )
 
 vizualization_with_masks = True
@@ -59,8 +57,7 @@ indexes_visualization = np.array([i for i in range(len(dataset)) if dataset.imgs
 visualization_loader = DataLoader(
     dataset,
     batch_size=batch_size,
-    sampler=SubsetRandomSampler(indexes_visualization),
-    collate_fn=lambda x: default_collate(x).to(device)
+    sampler=SubsetRandomSampler(indexes_visualization)
 )
 
 class Pretrained(nn.Module):
@@ -122,13 +119,13 @@ class ArcFace(nn.Module):
         outputs = self.scale * (outputs + (expanded * one_hot_mask))
         return criterion(outputs, targets)
 
-def test(model, dataloader)
+def test(model, dataloader, device):
     correct = total = 0
     total_iters = len(dataloader)
     model.eval()
     with torch.no_grad():    
         for i, (inputs, labels) in enumerate(dataloader):
-            outputs = model(inputs)
+            outputs = model(inputs.to(device))
             predicted = torch.argmax(outputs.data, dim=1)
             correct += predicted.eq(labels.data).cpu().sum()
             total += labels.size(0)
@@ -136,13 +133,13 @@ def test(model, dataloader)
     print("\rtest: finished") 
     return (correct / total).item()
 
-def visualize_embeding(model, dataloader):  
+def visualize_embeding(model, dataloader, device):  
     model.eval()
     total_iters = len(dataloader)
     all_outputs,all_labels = np.zeros((0,512)),[]
     with torch.no_grad():
         for i,(inputs,labels) in enumerate(dataloader):
-          outputs = model.encode(inputs)
+          outputs = model.encode(inputs.to(device))
           all_outputs = np.vstack((all_outputs, outputs.cpu().detach().numpy()))
           all_labels.extend(list(labels))
           if i%10==0: print('\rvizualization: eval - ' + "{:.2f}".format((i+1)/total_iters*100) + "%", end='')
@@ -404,7 +401,6 @@ class Lfw_verification:
 
 
 lfw_ver_masks = Lfw_verification('lfw_with_masks','drive/MyDrive/KNN/pairs_with_masks.txt', device)
-casia_test = Casia_test(test_loader, device)
 
 arcface = True
 
@@ -421,7 +417,8 @@ iter = 0
 train_acc = 0
 for epoch in range(6): 
     loss_sum = correct = total = 0
-    for batch, (inputs, labels) in enumerate(train_loader_no_masks):    
+    for batch, (inputs, labels) in enumerate(train_loader):    
+        inputs, labels = inputs.to(device), labels.to(device)
         model.train()
         optimizer.zero_grad()
         outputs = model(inputs)
