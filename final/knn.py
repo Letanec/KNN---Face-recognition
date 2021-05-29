@@ -406,7 +406,7 @@ class Lfw_verification:
 lfw_ver_masks = Lfw_verification('lfw_with_masks','drive/MyDrive/KNN/pairs_with_masks.txt', device)
 casia_test = Casia_test(test_loader, device)
 
-arcface = False
+arcface = True
 
 model = Pretrained(arcface).to(device)
 optimizer = optim.Adam(model.parameters(), lr=1e-4) 
