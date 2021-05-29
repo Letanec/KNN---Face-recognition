@@ -21,19 +21,28 @@ import math
 from numpy import save
 from numpy import load
 from sklearn.manifold import TSNE
+from log import Log
 
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 print('Running on device: {}'.format(device))
 
-dataset_dir = 'casia_with_masks'              
-batch_size = 32                  
+casia_dir = 'datasets/casia_with_masks'       
+lfw_dir = 'datasets/lfw_with_masks'
+lfw_pair_path = 'datasets/pairs_with_masks.txt'
+log_dir = 'logs'
+model_dir = 'models'
+
+batch_size = 32   
+arcface = True
+
+
 transformation = transforms.Compose([
     transforms.Resize(160), 
     np.float32,
     transforms.ToTensor(),
     fixed_image_standardization
 ])
-dataset = datasets.ImageFolder(dataset_dir, transform=transformation)
+dataset = datasets.ImageFolder(casia_dir, transform=transformation)
 
 indexes = np.arange(len(dataset))
 np.random.shuffle(indexes)
@@ -69,8 +78,8 @@ class Pretrained(nn.Module):
             self.last_fc = list(pretrained_model.children())[-1]
             self.last_fc.bias = None
 
-    def save_model(self, train_acc):
-        model_path = "./models/model_acc_" + '{:.3f}'.format(train_acc) + "_time_" + str(calendar.timegm(time.gmtime()))
+    def save(self, path, train_acc=0):
+        model_path = os.path.join(path, "model_acc_" + '{:.3f}'.format(train_acc) + "_time_" + str(calendar.timegm(time.gmtime())))
         torch.save(self.state_dict(), model_path)
         
     def encode(self, x):
@@ -400,9 +409,8 @@ class Lfw_verification:
 
 
 
-lfw_ver_masks = Lfw_verification('lfw_with_masks','drive/MyDrive/KNN/pairs_with_masks.txt', device)
-
-arcface = True
+lfw_ver = Lfw_verification(lfw_dir, lfw_pairs_path, device)
+log = Log(log_dir)
 
 model = Pretrained(arcface).to(device)
 optimizer = optim.Adam(model.parameters(), lr=1e-4) 
@@ -436,12 +444,19 @@ for epoch in range(6):
 
         if iter%train_acc_interval == 0:
             print('iter',iter,'epoch',epoch,'train acc',train_acc,'loss',avg_loss)
+            log.train(train_acc)
+            log.loss(avg_loss)
 
         if iter%test_interval == 0:
             test_acc = test(model, test_loader)
             print('iter',iter,'epoch',epoch,'test acc',test_acc)
+            log.test(test_acc)
 
         if iter != 0 and iter%lfw_ver_interval == 0: 
-            print('ver =', "{:.4f}".format(lfw_ver_masks.verify(model)))
+            lfw_ver = lfw_ver_masks.verify(model)
+            print('ver =', "{:.4f}".format(lfw_ver))
+            log.lfw(lfw_ver)
 
         iter += 1
+
+    model.save(model_dir, train_acc)
