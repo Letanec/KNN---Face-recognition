@@ -1,14 +1,9 @@
-
 import torch
-from torch import nn
-from torch import optim
-from torchvision import datasets, transforms
-import numpy as np
-from log import Log
-from eval import test
+from torch import nn, optim
+
 from arc_face import ArcFace
-from datasets import prepare_datasets
-from train import train
+from eval import test
+from log import Log
 
 
 def train(
@@ -20,7 +15,9 @@ def train(
     log_dir, 
     model_dir,
     train_acc_interval = 100, 
-    test_acc_interval = 10000):
+    test_acc_interval = 10000,
+    epochs_num = 10
+    ):
     
     iter = 0
     train_acc = 0

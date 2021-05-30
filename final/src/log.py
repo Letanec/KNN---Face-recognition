@@ -1,5 +1,6 @@
 from datetime import datetime
 
+
 class Log:
     def __init__(self, dir):
         self.dir = dir

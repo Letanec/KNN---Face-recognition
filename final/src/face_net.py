@@ -1,7 +1,10 @@
+from datetime import datetime
+
 import torch
 import torch.nn.functional as F
 from facenet_pytorch import InceptionResnetV1
-from datetime import datetime
+from torch import nn
+
 
 class Pretrained(nn.Module):
     def __init__(self, arcface=False):

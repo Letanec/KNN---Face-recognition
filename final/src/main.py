@@ -1,19 +1,12 @@
-
-from facenet_pytorch import MTCNN, InceptionResnetV1, fixed_image_standardization, training, extract_face
-import torch
-from torch import nn
-from torch import optim
-from torch.utils.data import DataLoader, SubsetRandomSampler, SequentialSampler
-from torchvision import datasets, transforms
-import numpy as np
-import matplotlib.pyplot as plt
-from sklearn.manifold import TSNE
 import argparse
-from log import Log
-from eval import Lfw_evaluation, test, visualize_embeding
-from arc_face import ArcFace
+
+import torch
+
 from datasets import prepare_datasets
+from eval import Lfw_evaluation, visualize_embeding
+from face_net import Pretrained
 from train import train
+
 
 def main(args):
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
@@ -32,7 +25,7 @@ def main(args):
     train_loader, test_loader, visualization_loader = prepare_datasets(casia_dir, args.batch_size)
 
     #model
-    model = Pretrained(arcface)
+    model = Pretrained(args.arcface)
     if args.load_model is not None:
         model.load_state_dict(torch.load(args.load_model))
     model.to(device)
@@ -45,9 +38,10 @@ def main(args):
         acc, _, val, _ = lfw_ver.eval(model, far_target=args.far)
         print('LFW - accurancy: ' + str(acc) + ', val: ' + str(val) + ' (@far = ' + str(args.far) + ')')
     elif args.plot_roc:
+        lfw_ver = Lfw_evaluation(lfw_dir, lfw_pairs_path, device)
         lfw_ver.plot_roc(model)
     else:
-        train(model, device, args.arcface, train_loader, test_loader, log_dir, model_dir, train_acc_interval, test_acc_interval)
+        train(model, device, args.arcface, train_loader, test_loader, log_dir, model_dir, train_acc_interval, test_acc_interval, args.epochs_num)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
