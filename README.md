@@ -22,7 +22,7 @@ Tyto balíčky lze nainstalovat příkazem
 `pip install torch torchvision facenet_pytorch numpy scipy matplotlib sklearn`
 
 ## Výsledný model
-Pokud budete chtít použít námi natrénované modely, stačí spustit skript příkazem `python main.py -m ../models/final_model -a` (pozor - pro načtení model natrénovaného na ArcFace je nutné uvést argument `-a`). Námi natrénované modely jsou dostupné na https://xx.cz.
+Pokud budete chtít použít námi natrénované modely, stačí spustit skript příkazem `python main.py -m ../models/final_model -a` (pozor - pro načtení model natrénovaného na ArcFace je nutné uvést argument `-a`). Námi natrénované modely jsou dostupné na https://drive.google.com/drive/folders/1zD6XL9Tu2tihpTlxOaHFqEB1yX97FNuT?usp=sharing.
 
 ## Datasety
 Pokud byste chtěl spustit trénování a evaluaci na plnohodnotném datasetu, můžete si stáhnout datasety lfw (http://vis-www.cs.umass.edu/lfw/) a casia (https://drive.google.com/file/d/1Of_EVz-yHV7QVWQGihYfvtny9Ne8qXVz/view), umístit je do složky `datasets`. Kořenové adresáře datasetů se musejí jmenovat `datasets/lfw` a `datasets/casia`. V případě LFW musí adresář krom podadresářů s fotkami obsahovat soubor `pairs.txt`, který lze také stáhnout z uvedeného odkazu.
