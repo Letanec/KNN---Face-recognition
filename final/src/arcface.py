@@ -1,7 +1,6 @@
 import torch
-import torch.nn.functional as F
 from torch import nn
-
+import torch.nn.functional as F
 
 class ArcFace(nn.Module):
     def __init__(self, margin = 0.5, scale = 64):

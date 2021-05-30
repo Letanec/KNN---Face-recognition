@@ -6,8 +6,9 @@ from torchvision import datasets, transforms
 import numpy as np
 from log import Log
 from evaluation import test
-from arc_face import ArcFace
+from arcface import ArcFace
 from datasets import prepare_datasets
+
 
 def train(
     model, 
@@ -17,6 +18,7 @@ def train(
     test_loader, 
     log_dir, 
     model_dir,
+    epochs_num,
     train_acc_interval = 100, 
     test_acc_interval = 10000):
     

@@ -1,14 +1,12 @@
-from datetime import datetime
-
 import torch
+from torch import nn
 import torch.nn.functional as F
 from facenet_pytorch import InceptionResnetV1
-from torch import nn
+from datetime import datetime
 
-
-class Pretrained(nn.Module):
+class Pretrained_Facenet(nn.Module):
     def __init__(self, arcface=False):
-        super(Pretrained, self).__init__()    
+        super(Pretrained_Facenet, self).__init__()    
         self.arcface = arcface
         self.pretrained_model = InceptionResnetV1(classify=True, pretrained='casia-webface') 
         if arcface:
@@ -17,7 +15,7 @@ class Pretrained(nn.Module):
 
     def save(self, path, train_acc=0):
         ts = datetime.now().strftime("%Y-%m-%d_%Hh%Mm%Ss")
-        model_path = path + "/model_" + ts +"_acc_" + '{:.3f}'.format(train_acc) + ".pt"
+        model_path = path + "/model_" + ts +"_acc_" + '{:.3f}'.format(train_acc)
         torch.save(self.state_dict(), model_path)
         
     def encode(self, x):

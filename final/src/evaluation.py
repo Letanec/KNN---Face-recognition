@@ -1,16 +1,15 @@
+import torch
+from torchvision import datasets, transforms
+import numpy as np
+import matplotlib.pyplot as plt
+from facenet_pytorch import fixed_image_standardization
+from torch.utils.data import DataLoader, SequentialSampler
+from sklearn.model_selection import KFold
 import math
 import os
-
-import matplotlib.pyplot as plt
-import numpy as np
-import torch
-from facenet_pytorch import fixed_image_standardization
 from scipy import interpolate
+import matplotlib.pyplot as plt
 from sklearn.manifold import TSNE
-from sklearn.model_selection import KFold
-from torch.utils.data import DataLoader, SequentialSampler
-from torchvision import datasets, transforms
-
 
 # LFW evaluace -- prevzato z https://github.com/timesler/facenet-pytorch/blob/master/examples/lfw_evaluate.ipynb
 class Lfw_evaluation:
@@ -34,14 +33,14 @@ class Lfw_evaluation:
         pairs = self._read_pairs(lfw_pairs)
         self.path_list, self.issame_list = self._get_paths(lfw_root, pairs)
 
-    def eval(self, model, distance_metric=0, cached=False):
+    def eval(self, model, far_target=1e-3, distance_metric=0, cached=False):
         if cached:
             embeddings = self.cached_embeddings
         else:
             embeddings_dict = self._get_embeddings_dict(model)
             embeddings = np.array([embeddings_dict[path] for path in self.path_list])
             self.cached_embeddings = embeddings
-        _, _, accuracy, val_mean, val_std, _, _, _ = self._eval(embeddings, np.asarray(self.issame_list), distance_metric=distance_metric)
+        _, _, accuracy, val_mean, val_std, _, _, _ = self._eval(embeddings, np.asarray(self.issame_list), distance_metric=distance_metric, far_target=far_target)
         acc_mean = np.mean(accuracy)
         acc_std = np.std(accuracy)
         return acc_mean, acc_std, val_mean, val_std
@@ -55,11 +54,12 @@ class Lfw_evaluation:
             self.cached_embeddings = embeddings
         embeddings1 = embeddings[0::2]
         embeddings2 = embeddings[1::2]     
-        thresholds = np.arange(0, 0.9, 0.0001)
+        thresholds = np.arange(0, 4, 0.001)
         tpr, fpr, _, _, _  = self._calculate_roc(thresholds, embeddings1, embeddings2, np.asarray(self.issame_list), distance_metric=distance_metric)
+        plt.figure(figsize=(5,5))
         plt.plot(fpr, tpr)
-        plt.xlabel("far")
-        plt.ylabel("tar")
+        plt.xlabel("FAR")
+        plt.ylabel("TAR")
         plt.title("ROC")
         plt.show()
  
@@ -80,22 +80,22 @@ class Lfw_evaluation:
         embeddings_dict = dict(zip(paths,embeddings))
         return embeddings_dict
 
-    def _distance(self, embeddings1, embeddings2, _distance_metric=0):
-        if _distance_metric==0:
+    def _distance(self, embeddings1, embeddings2, distance_metric=0):
+        if distance_metric==0:
             # Euclidian distance
             diff = np.subtract(embeddings1, embeddings2)
             dist = np.sum(np.square(diff),1)
-        elif _distance_metric==1:
+        elif distance_metric==1:
             # distance based on cosine similarity
             dot = np.sum(np.multiply(embeddings1, embeddings2), axis=1)
             norm = np.linalg.norm(embeddings1, axis=1) * np.linalg.norm(embeddings2, axis=1)
             similarity = dot / norm
             dist = np.arccos(similarity) / math.pi
         else:
-            raise 'Undefined distance metric %d' % _distance_metric
+            raise 'Undefined distance metric %d' % distance_metric
         return dist
 
-    def _calculate_roc(self, thresholds, embeddings1, embeddings2, actual_issame, nrof_folds=10, _distance_metric=0, subtract_mean=False):
+    def _calculate_roc(self, thresholds, embeddings1, embeddings2, actual_issame, nrof_folds=10, distance_metric=0, subtract_mean=False):
         assert(embeddings1.shape[0] == embeddings2.shape[0])
         assert(embeddings1.shape[1] == embeddings2.shape[1])
         nrof_pairs = min(len(actual_issame), embeddings1.shape[0])
@@ -116,7 +116,7 @@ class Lfw_evaluation:
                 mean = np.mean(np.concatenate([embeddings1[train_set], embeddings2[train_set]]), axis=0)
             else:
                 mean = 0.0
-            dist = self._distance(embeddings1-mean, embeddings2-mean, _distance_metric)
+            dist = self._distance(embeddings1-mean, embeddings2-mean, distance_metric)
             # Find the best threshold for the fold
             acc_train = np.zeros((nrof_thresholds))
             for threshold_idx, threshold in enumerate(thresholds):
@@ -148,7 +148,7 @@ class Lfw_evaluation:
         acc = float(tp+tn)/dist.size
         return tpr, fpr, acc, is_fp, is_fn
 
-    def _calculate_val(self, thresholds, embeddings1, embeddings2, actual_issame, far_target, nrof_folds=10, _distance_metric=0, subtract_mean=False):
+    def _calculate_val(self, thresholds, embeddings1, embeddings2, actual_issame, far_target, nrof_folds=10, distance_metric=0, subtract_mean=False):
         assert(embeddings1.shape[0] == embeddings2.shape[0])
         assert(embeddings1.shape[1] == embeddings2.shape[1])
         nrof_pairs = min(len(actual_issame), embeddings1.shape[0])
@@ -165,7 +165,7 @@ class Lfw_evaluation:
                 mean = np.mean(np.concatenate([embeddings1[train_set], embeddings2[train_set]]), axis=0)
             else:
                 mean = 0.0
-            dist = self._distance(embeddings1-mean, embeddings2-mean, _distance_metric)
+            dist = self._distance(embeddings1-mean, embeddings2-mean, distance_metric)
             # Find the threshold that gives FAR = far_target
             far_train = np.zeros(nrof_thresholds)
             for threshold_idx, threshold in enumerate(thresholds):
@@ -193,15 +193,15 @@ class Lfw_evaluation:
         far = float(false_accept) / float(n_diff)
         return val, far
 
-    def _eval(self, embeddings, actual_issame, nrof_folds=10, _distance_metric=0, subtract_mean=False):
+    def _eval(self, embeddings, actual_issame, far_target=1e-3, nrof_folds=10, distance_metric=0, subtract_mean=False):
         thresholds = np.arange(0, 4, 0.01)
         embeddings1 = embeddings[0::2]
         embeddings2 = embeddings[1::2]
         tpr, fpr, accuracy, fp, fn  = self._calculate_roc(thresholds, embeddings1, embeddings2,
-            np.asarray(actual_issame), nrof_folds=nrof_folds, _distance_metric=_distance_metric, subtract_mean=subtract_mean)
+            np.asarray(actual_issame), nrof_folds=nrof_folds, distance_metric=distance_metric, subtract_mean=subtract_mean)
         thresholds = np.arange(0, 4, 0.001)
         val, val_std, far = self._calculate_val(thresholds, embeddings1, embeddings2,
-            np.asarray(actual_issame), 1e-3, nrof_folds=nrof_folds, _distance_metric=_distance_metric, subtract_mean=subtract_mean)
+            np.asarray(actual_issame), far_target, nrof_folds=nrof_folds, distance_metric=distance_metric, subtract_mean=subtract_mean)
         return tpr, fpr, accuracy, val, val_std, far, fp, fn
 
     def _add_extension(self, path):
@@ -277,8 +277,10 @@ def visualize_embeding(model, dataloader, device):
     x,y = np.hsplit(outputs_embedded, 2)
     x,y = x.flatten(), y.flatten()
     colors = [list(np.random.rand(3)) for i in range(unique_cnt(all_labels))]
+    plt.figure(figsize=(5,5))
     for i in range(len(all_labels)):
-      plt.scatter(x[i], y[i], color=colors[all_labels[i]])
+      plt.scatter(x[i], y[i], color=colors[all_labels[i]], s=1)
+      if i%20==0: print("\rvizualization: plotting - " + "{:.2f}".format((i+1)/len(all_labels)*100) + "%", end='') 
     print("\rvizualization: finished") 
     plt.show()
 
