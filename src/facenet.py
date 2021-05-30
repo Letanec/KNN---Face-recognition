@@ -3,7 +3,6 @@ from torch import nn
 import torch.nn.functional as F
 from facenet_pytorch import InceptionResnetV1
 from datetime import datetime
-
 class Pretrained_Facenet(nn.Module):
     def __init__(self, arcface=False):
         super(Pretrained_Facenet, self).__init__()    

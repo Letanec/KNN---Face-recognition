@@ -14,13 +14,15 @@ Skript pro trénování a evaluaci spustíte příkazem `python main.py` z adres
 * `-r` nebo `--plot_roc` pro spuštění evaluace na LFW a následné vytisknutí křivky ROC 
 * `-s` nebo `--visualize_embedings` pro vizualizaci rozmístění embedingů v prostoru (pro dataset CASIA)
 
+Parametry po evaluacy, vykreslení ROC křivky a vizualizaci embedingů jsou exkluzivní. Spuštění s více než jedním z těchto parametrů nevede na chybu, ale provede se jen jeden z nich (s tím, že jsou seřazené s následující prioritou: `--visualize_embedings` > `--evaluate` > `--plot_roc`).
+
 ### Závislosti
 Pro spuštění programu je třeba Python verze 3.6 a novější s nainstalovanými balíčky torch, torchvision, facenet_pytorch, numpy, scipy, matplotlib a sklearn.
 Tyto balíčky lze nainstalovat příkazem 
 `pip install torch torchvision facenet_pytorch numpy scipy matplotlib sklearn`
 
 ## Výsledný model
-Pokud budete chtít použít námi natrénované modely, stačí spustit skript příkazem `python main.py -m ../models/final_model`. Námi natrénované modely jsou dostupné na https://xx.cz.
+Pokud budete chtít použít námi natrénované modely, stačí spustit skript příkazem `python main.py -m ../models/final_model -a` (pozor - pro načtení model natrénovaného na ArcFace je nutné uvést argument `-a`). Námi natrénované modely jsou dostupné na https://xx.cz.
 
 ## Datasety
 Pokud byste chtěl spustit trénování a evaluaci na plnohodnotném datasetu, můžete si stáhnout datasety lfw (http://vis-www.cs.umass.edu/lfw/) a casia (https://drive.google.com/file/d/1Of_EVz-yHV7QVWQGihYfvtny9Ne8qXVz/view), umístit je do složky `datasets`. Kořenové adresáře datasetů se musejí jmenovat `datasets/lfw` a `datasets/casia`. V případě LFW musí adresář krom podadresářů s fotkami obsahovat soubor `pairs.txt`, který lze také stáhnout z uvedeného odkazu.
