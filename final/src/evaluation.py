@@ -1,14 +1,16 @@
-import torch
-from torchvision import datasets, transforms
-import numpy as np
-import matplotlib.pyplot as plt
-from facenet_pytorch import fixed_image_standardization
-from torch.utils.data import DataLoader, SequentialSampler
-#from sklearn.model_selection import KFold
 import math
 import os
-#from scipy import interpolate
-#from sklearn.manifold import TSNE
+
+import matplotlib.pyplot as plt
+import numpy as np
+import torch
+from facenet_pytorch import fixed_image_standardization
+from scipy import interpolate
+from sklearn.manifold import TSNE
+from sklearn.model_selection import KFold
+from torch.utils.data import DataLoader, SequentialSampler
+from torchvision import datasets, transforms
+
 
 # LFW evaluace -- prevzato z https://github.com/timesler/facenet-pytorch/blob/master/examples/lfw_evaluate.ipynb
 class Lfw_evaluation:
