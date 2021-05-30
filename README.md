@@ -19,7 +19,7 @@ Parametry po evaluaci, vykreslení ROC křivky a vizualizaci embedingů jsou exk
 ### Závislosti
 Pro spuštění programu je třeba Python verze 3.6 a novější s nainstalovanými balíčky torch, torchvision, facenet_pytorch, numpy, scipy, matplotlib, sklearn a cv2.
 Tyto balíčky lze nainstalovat příkazem 
-`pip install torch torchvision facenet_pytorch numpy scipy matplotlib sklearn cv2`
+`pip install torch torchvision facenet_pytorch numpy scipy matplotlib sklearn opencv-python`
 
 ## Výsledný model
 Pokud budete chtít použít námi natrénované modely, stačí spustit skript příkazem `python main.py -m ../models/final_model -a` (pozor - pro načtení model natrénovaného na ArcFace je nutné uvést argument `-a`). Námi natrénované modely jsou dostupné na https://drive.google.com/drive/folders/1zD6XL9Tu2tihpTlxOaHFqEB1yX97FNuT?usp=sharing.
