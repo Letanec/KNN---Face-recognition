@@ -1,4 +1,3 @@
-
 import numpy as np
 import sys
 import dlib
@@ -13,8 +12,8 @@ from facenet_pytorch import MTCNN
 
 lfw_dir = '../datasets/lfw'
 lfw_dir_new = '../datasets/lfw_with_masks'
-pairs_filename = '../datasets/pairs.txt'
-new_pairs_filename = '../datasets/pairs_with_masks.txt'
+pairs_filename = '../datasets/lfw/pairs.txt'
+new_pairs_filename = '../datasets/lfw_with_masks/pairs_with_masks.txt'
 casia_dir = '../datasets/casia'
 casia_dir_new = '../datasets/casia_with_masks'
 
@@ -35,6 +34,9 @@ def shape_to_np(shape, dtype="int"):
 def load(path):
   image = cv2.imread(path)
   return image
+
+def is_img(path):
+  return path.lower().endswith(('.png', '.jpg', '.jpeg', '.tiff', '.bmp', '.gif'))
 
 def add_mask(image):
   image_gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
@@ -64,16 +66,20 @@ def save(image, path):
   image = cv2.resize(image, (160,160))
   cv2.imwrite(path, image)
 
+def convert_path(path):
+  extension = os.path.splitext(path)[1]
+  return path.replace(extension, 'm'+extension)
+
 #LFW
 
-cnt = len(next(os.walk(lfw_dir))[1])
-i=0
-for root, dirs, files in os.walk(lfw_dir):
+cnt = len(next(os.walk(lfw_dir))[1])-1
+for i, (root, dirs, files) in enumerate(os.walk(lfw_dir)):
   if len(files)==0: continue
   new_root = root.replace(lfw_dir, lfw_dir_new)
-  os.makedirs(new_root)
+  os.makedirs(new_root, exist_ok=True)
   for name in files:
     path = os.path.join(root, name)
+    if not is_img(path): continue
     new_path = os.path.join(new_root, name)
     new_path_masked = new_path.replace("_0", "_1")
     image = load(path)
@@ -86,8 +92,9 @@ for root, dirs, files in os.walk(lfw_dir):
     if isinstance(image_masked, type(None)): continue
     image_cropped,_ = crop(image_masked, box)
     save(image_cropped, new_path_masked)
-  i+=1
-  print('\r', "{:.2f}".format(i/cnt*100), "%,", str(i)+"/"+str(cnt), end='')
+  print('\rLFW: adding masks -', "{:.2f}".format(i/cnt*100), "%,", str(i)+"/"+str(cnt), end='')
+
+print('\rLFW: generating pairs', end='')
 
 with open(pairs_filename, 'r') as f:
   for line in f.readlines()[1:]:
@@ -119,19 +126,20 @@ with open(pairs_filename, 'r') as f:
     with open(new_pairs_filename,'a') as file:
       file.write("\t".join(pair) + "\n")
 
+print('\rLFW: finished')
 
 #CASIA
 
 cnt = len(next(os.walk(casia_dir))[1])
-i=0
-for root, dirs, files in os.walk(casia_dir):
+for i, (root, dirs, files) in enumerate(os.walk(casia_dir)):
   if len(files)==0: continue
   new_root = root.replace(casia_dir, casia_dir_new)
-  os.makedirs(new_root)
+  os.makedirs(new_root, exist_ok=True)
   for name in files:
     path = os.path.join(root, name)
+    if not is_img(path): continue
     new_path = os.path.join(new_root, name)
-    new_path_masked = new_path.replace(".", "m.")
+    new_path_masked = convert_path(new_path)
     image = load(path)
     image_cropped, box = crop(image)
     if isinstance(image_cropped, type(None)): continue
@@ -140,5 +148,6 @@ for root, dirs, files in os.walk(casia_dir):
     if isinstance(image_masked, type(None)): continue
     image_cropped,_ = crop(image_masked, box)
     save(image_cropped, new_path_masked)
-  i+=1
-  print('\r', "{:.2f}".format(i/cnt*100), "%,", str(i)+"/"+str(cnt), end='')
+  print('\rCASIA: adding masks -', "{:.2f}".format(i/cnt*100), "%,", str(i)+"/"+str(cnt), end='')
+
+print('\rCASIA: finished')

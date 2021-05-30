@@ -21,7 +21,7 @@ def main(args):
 
     casia_dir = '../datasets/casia_with_masks'       
     lfw_dir = '../datasets/lfw_with_masks'
-    lfw_pairs_path = '../datasets/pairs_with_masks.txt'
+    lfw_pairs_path = '../datasets/lfw_with_masks/pairs_with_masks.txt'
     log_dir = '../logs'
     model_dir = '../models'
 
@@ -43,7 +43,7 @@ def main(args):
     elif args.evaluate:
         lfw_ver = Lfw_evaluation(lfw_dir, lfw_pairs_path, device)
         acc, _, val, _ = lfw_ver.eval(model, far_target=args.far)
-        print('LFW - accurancy: ' + str(acc) + ', val: ' + str(val) + ' (@far = ' + str(args.far) + ')')
+        print('LFW - accurancy: ' + str(acc) + ', tar: ' + str(val) + ' (@far = ' + str(args.far) + ')')
     elif args.plot_roc:
         lfw_ver = Lfw_evaluation(lfw_dir, lfw_pairs_path, device)
         lfw_ver.plot_roc(model)
