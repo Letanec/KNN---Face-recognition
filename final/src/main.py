@@ -6,14 +6,12 @@ from torch import optim
 from torch.utils.data import DataLoader, SubsetRandomSampler, SequentialSampler
 from torchvision import datasets, transforms
 import numpy as np
-import matplotlib.pyplot as plt
-from sklearn.manifold import TSNE
 import argparse
 from log import Log
-from eval import Lfw_evaluation, test, visualize_embeding
+from evaluation import Lfw_evaluation, test, visualize_embeding
 from arc_face import ArcFace
 from datasets import prepare_datasets
-from train import train
+from training import train
 
 def main(args):
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
@@ -55,9 +53,9 @@ if __name__ == "__main__":
     parser.add_argument("-e", "--epochs_num", help="set number of epochs for training", action="store", type=int, default=10)
     parser.add_argument("-l", "--load_model", help="set path to model to be loaded", action="store", type=str, default=None)
     parser.add_argument("-a", "--arcface", help="use ArcFace as loss function during training", action='store_true')
-    parser.add_argument("-e", "--evaluate", help="evaluate on LFW", action='store_true')
+    parser.add_argument("-v", "--evaluate", help="evaluate on LFW", action='store_true')
     parser.add_argument("-f", "--far", help="far used while verifying on LFW", type=float, default=0.001)
     parser.add_argument("-r", "--plot_roc", help="plot ROC using LFW", action='store_true')
-    parser.add_argument("-v", "--visualize_embedings", help="plot visualized embedings", action='store_true')
+    parser.add_argument("-s", "--visualize_embedings", help="plot visualized embedings", action='store_true')
     args = parser.parse_args()
     main(args)

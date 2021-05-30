@@ -5,11 +5,9 @@ from torch import optim
 from torchvision import datasets, transforms
 import numpy as np
 from log import Log
-from eval import test
+from evaluation import test
 from arc_face import ArcFace
 from datasets import prepare_datasets
-from train import train
-
 
 def train(
     model, 

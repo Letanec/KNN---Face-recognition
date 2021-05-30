@@ -2,6 +2,7 @@ import torch
 from torch.utils.data import DataLoader, SubsetRandomSampler, SequentialSampler
 from torchvision import datasets, transforms
 from facenet_pytorch import fixed_image_standardization
+import numpy as np
 
 def prepare_datasets(casia_dir, batch_size):
     transformation = transforms.Compose([
