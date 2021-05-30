@@ -15,7 +15,7 @@ lfw_dir = '../datasets/lfw'
 lfw_dir_new = '../datasets/lfw_with_masks'
 pairs_filename = '../datasets/pairs.txt'
 new_pairs_filename = '../datasets/pairs_with_masks.txt'
-casia_dir = '../datasets/casia_orig'
+casia_dir = '../datasets/casia'
 casia_dir_new = '../datasets/casia_with_masks'
 
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')

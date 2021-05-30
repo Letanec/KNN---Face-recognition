@@ -1,11 +1,11 @@
-# KNN Face-recognition
+# KNN Identifikace osob podle obličeje
 Cílem tohoto projektu je natrénování neuronové sítě pro verifikaci osob podle obličeje s nasazenou rouškou. 
 Projekt vypracovali xnekut00, xplatan00 a xplach08 pro předmět KNN v roce 2021.
 ## Spuštění
-Skript pro trénování a evaluaci spustíte příkazem `python main.py` z adresáře src. Běh programu lze ovlivnit následujícími argumenty:
+Skript pro trénování a evaluaci spustíte příkazem `python main.py` z adresáře `src`. Běh programu lze ovlivnit následujícími argumenty:
 * `-b` nebo `--batch_size` následované kladným celým číslem pro zadání velikosti batche (defaultně 52)
 * `-e` nebo `--epochs_num` následované kladným celým číslem pro zadání počtu epoch trénování (defaultně 10)
-* `-m` nebo `--model_path` následované cestou k uloženým váhám pro načtení dříve natrénovaných vah do modelu
+* `-m` nebo `--model_path` následované cestou k uloženému modelu pro načtení dříve natrénovaných vah
 * `-f` nebo `--far` následované maximální povolenou hodnotou FAR (defaultně 0.001) pro evaluaci (má efekt pouze ve spojení s argumentem `-v`)
 * `-a` nebo `--arcface` pro použití loss funkce ArcFace (bez tohoto argumentu se defaultně použije Cross Entropy)
 * `-v` nebo `--evaluate` pro evaluaci na datasetu LFW
@@ -18,13 +18,13 @@ Tyto balíčky lze nainstalovat příkazem
 `pip install torch torchvision facenet_pytorch numpy scipy matplotlib sklearn`
 
 ## Výsledný model
-Pokud budete chtít použít námi natrénovaný model, stačí spustit skript příkazem `python main.py -m ../models/final_model`.
+Pokud budete chtít použít námi natrénované modely, stačí spustit skript příkazem `python main.py -m ../models/final_model`. Námi natrénované modely jsou dostupné na https://xx.cz.
 
 ## Datasety
-Pokud byste chtěl spustit trénování a evaluaci na plnohodnotném datasetu, můžete si stáhnout datasety lfw (http://vis-www.cs.umass.edu/lfw/) a casia (https://drive.google.com/file/d/1Of_EVz-yHV7QVWQGihYfvtny9Ne8qXVz/view), umístit je do složky `datasets`. Kořenové složky datasetů se musejí jmenovat `datasets/lfw` a `datasets/casia_orig` a musejí krom podsložek s fotkami obsahovat soubory `pairs.txt` pro LFW a `pairs.txt` pro CASIA, které lze také stáhnout z uvedených odkazů.
-### Nasazení masek na dataset
-Nasazení masek na obličeje v datasetech lze spuštěním skriptu add_masks.py příkazem `python add_masks.py`.
+Pokud byste chtěl spustit trénování a evaluaci na plnohodnotném datasetu, můžete si stáhnout datasety lfw (http://vis-www.cs.umass.edu/lfw/) a casia (https://drive.google.com/file/d/1Of_EVz-yHV7QVWQGihYfvtny9Ne8qXVz/view), umístit je do složky `datasets`. Kořenové adresáře datasetů se musejí jmenovat `datasets/lfw` a `datasets/casia`. V případě LFW musí adresář krom podadresářů s fotkami obsahovat soubor `pairs.txt`, který lze také stáhnout z uvedeného odkazu.
+### Přidání roušek na obrázky v datasetu
+Přidání roušek na obličeje lze provést spuštěním `python add_masks.py`. Skript naplní adresář `datasets/casia_with_masks` upravenými obrázky, obdobně `datasets/lfw_with_masks` včetně `datasets/lfw_with_masks/pairs_with_masks.txt`. Před použitím je třeba stáhnout a rozbalit konfiguraci modelu Dlib, a to spuštěním příkazu `wget http://dlib.net/files/shape_predictor_68_face_landmarks.dat.bz2 && bzip2 -d shape_predictor_68_face_landmarks.dat.bz2` v adresáři `src`.
 
 ## Převzatý kód
-Pro automatické nasazení masek na obličeje v datasetech jsme použili knihovnu Dlib dostupnou na https://github.com/davisking/dlib.
+Pro detekci obličejových bodů k automatickému mapování roušek na obličeje jsme použili knihovnu Dlib dostupnou na https://github.com/davisking/dlib.
 Pro evaluaci modelu na datasetu LFW jsme použili kód z https://github.com/timesler/facenet-pytorch/blob/master/examples/lfw_evaluate.ipynb.
