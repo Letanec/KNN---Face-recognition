@@ -1,9 +1,0 @@
-https://miro.medium.com/max/2054/1*aq0q7gCvuNUqnMHh4cpnIw.png
-https://www.mdpi.com/entropy/entropy-22-00193/article_deploy/html/images/entropy-22-00193-g001.png
-https://www.researchgate.net/figure/Network-structure-illustration-a-ResNet-18-original-structure-b-Root-ResNet-18_fig2_330553456
-
-KNN 04 -> 10 -> ResNet variant (a) original
-
-https://medium.com/@mustafaazzurri/face-recognition-system-and-calculating-frr-far-and-eer-for-biometric-system-evaluation-code-2ac2bd4fd2e5
-
-Please check src/data/face2rec2.py on how to build a binary face dataset. You can either choose MTCNN or RetinaFace to align the faces.

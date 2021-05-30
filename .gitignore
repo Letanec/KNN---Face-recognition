@@ -1,8 +1,5 @@
-outputs/
+logs/
 models/
-unused/
 datasets/
-models/
 .vscode/
 __pycache__/
-model.pt

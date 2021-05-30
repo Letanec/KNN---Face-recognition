@@ -1,22 +1,21 @@
-import time
-import calendar
-import os
+from datetime import datetime
 
 class Log:
-    def __init__(self, filename):
-        self.filename = filename + '_' + str(calendar.timegm(time.gmtime()))
-        open(self.filename, "w").close()
+    def __init__(self, dir):
+        self.dir = dir
+        self.ts = datetime.now().strftime("%Y-%m-%d_%Hh%Mm%Ss")
+        
+    def test(self, val):
+        filename = self.dir + "/test_" + self.ts
+        with open(filename, 'a') as f:
+            f.write(str(val) + "\n")
 
-    def print(self, iteration, epoch, data):
-        print(self.filename, ": iteration", iteration, ", epoch", epoch, " -> ", data)
-        with open(self.filename, "a") as f:
-            f.write(str(iteration) + ',' + str(data) + '\n')
+    def train(self, val):
+        filename = self.dir + "/train_" + self.ts 
+        with open(filename, 'a') as f:
+            f.write(str(val) + "\n")
 
-def create_logs():
-    path = "outputs"
-    logs_names = ["acc","test_acc","ver","lfw_ver","loss","tf","lfw_tf"]
-    logs = []
-    for ln in logs_names:
-        log = Log(os.path.join(path, ln))
-        logs.append(log)
-    return logs
+    def loss(self, val):
+        filename = self.dir + "/loss_" + self.ts 
+        with open(filename, 'a') as f:
+            f.write(str(val) + "\n")
